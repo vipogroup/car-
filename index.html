@@ -916,74 +916,109 @@
             }, 30000);
         }
         
-        // זיהוי ודילוג על פרץומות - אלגוריתם משופר
+        // זיהוי ודילוג על פרסומות - אלגוריתם משופר במיוחד ל-PWA
         function detectAndSkipAds() {
-            if (!player || !player.getDuration || !player.getCurrentTime || !player.getVideoUrl) return;
+            if (!player || !player.getDuration || !player.getCurrentTime) return;
             
             try {
                 const duration = player.getDuration();
                 const currentTime = player.getCurrentTime();
                 const playerState = player.getPlayerState();
-                const currentUrl = player.getVideoUrl();
-                const videoData = player.getVideoData();
+                let currentUrl = '';
+                let videoData = null;
+                
+                // נסה לקבל URL ו-videoData (עשוי להיכשל בפרסומות)
+                try {
+                    currentUrl = player.getVideoUrl ? player.getVideoUrl() : '';
+                    videoData = player.getVideoData ? player.getVideoData() : null;
+                } catch (e) {
+                    // אם נכשל לקבל מידע - זה כנראה פרסומת!
+                    console.log('⚠️ לא ניתן לקבל מידע על הסרטון - כנראה פרסומת');
+                }
+                
+                // בדיקה מיוחדת ל-PWA: האם זה standalone mode?
+                const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                              window.navigator.standalone === true;
                 
                 // אסטרטגיות זיהוי משולבות:
                 let adIndicators = 0;
                 
-                // 1. בדיקת משך קצר (פרסומות בדרך כלל 6-30 שניות)
-                if (duration > 0 && duration >= 5 && duration <= 90) {
+                // 1. בדיקת משך קצר (פרסומות בדרך כלל 6-90 שניות)
+                if (duration > 0 && duration >= 3 && duration <= 120) {
                     adIndicators++;
                 }
                 
                 // 2. שינוי פתאומי ב-URL או במשך
-                if (lastVideoUrl && currentUrl !== lastVideoUrl) {
+                if (lastVideoUrl && currentUrl && currentUrl !== lastVideoUrl) {
                     adIndicators++;
                 }
-                if (lastKnownDuration > 0 && Math.abs(duration - lastKnownDuration) > 20) {
+                if (lastKnownDuration > 0 && Math.abs(duration - lastKnownDuration) > 15) {
                     adIndicators++;
                 }
                 
                 // 3. בדיקת שם הסרטון (פרסומות לעיתים קרובות יש מילים מסוימות)
                 if (videoData && videoData.title) {
                     const title = videoData.title.toLowerCase();
-                    const adKeywords = ['ad', 'advertisement', 'sponsor', 'פרסומת', 'מועצר'];
+                    const adKeywords = ['ad', 'advertisement', 'sponsor', 'פרסומת', 'מועצר', 'promo', 'commercial'];
                     if (adKeywords.some(keyword => title.includes(keyword))) {
-                        adIndicators += 2; // משקל גבוה יותר
+                        adIndicators += 3; // משקל גבוה מאוד
                     }
+                    
+                    // אם אין כותרת או כותרת ריקה - חשוד
+                    if (!title || title.trim() === '') {
+                        adIndicators += 2;
+                    }
+                } else {
+                    // אם אין videoData בכלל - חשוד מאוד
+                    adIndicators += 2;
                 }
                 
-                // 4. בדיקת התנהגות משונה - אם הסרטון מתנגן אבל לא ניתן לדלג
+                // 4. בדיקת התנהגות משונה
                 const timeRemaining = duration - currentTime;
-                if (timeRemaining > 0 && timeRemaining < 30 && duration < 60) {
+                if (timeRemaining > 0 && timeRemaining < 40 && duration < 90) {
                     adIndicators++;
                 }
                 
-                // החלטה: אם יש 2+ אינדיקטורים, זו כנראה פרסומת
-                const isPossibleAd = adIndicators >= 2 && playerState === 1;
+                // 5. בדיקה מיוחדת ל-PWA - אם ב-standalone mode, היה יותר אגרסיבי
+                if (isPWA && duration > 0 && duration < 60) {
+                    adIndicators += 2;
+                    console.log('🔍 PWA Mode - זיהוי אגרסיבי יותר');
+                }
+                
+                // החלטה: אם יש 2+ אינדיקטורים (או 3+ ב-PWA), זו כנראה פרסומת
+                const threshold = isPWA ? 3 : 2;
+                const isPossibleAd = adIndicators >= threshold && playerState === 1;
                 
                 if (isPossibleAd) {
                     consecutiveAdChecks++;
                     
-                    if (!isAdPlaying && consecutiveAdChecks >= 2) {
-                        console.log(`🚫 זוהתה פרסומת! (אינדיקטורים: ${adIndicators}) - משתיק ומדלג`);
+                    // ב-PWA mode - השתק מיד ללא המתנה
+                    const checksNeeded = isPWA ? 1 : 2;
+                    
+                    if (!isAdPlaying && consecutiveAdChecks >= checksNeeded) {
+                        console.log(`🚫 זוהתה פרסומת! (אינדיקטורים: ${adIndicators}, PWA: ${isPWA}) - משתיק ומדלג`);
                         isAdPlaying = true;
                         
-                        // השתקת שמע
+                        // השתקת שמע מיידית
                         if (player.isMuted && !player.isMuted()) {
                             lastVolume = player.getVolume();
                             player.mute();
                         }
                     }
                     
-                    // דילוג אגרסיבי - קפיצה לסוף הפרסומת
-                    if (isAdPlaying && currentTime < duration - 2) {
-                        const skipTo = Math.min(duration - 0.5, currentTime + 10);
-                        player.seekTo(skipTo, true);
-                    } else if (isAdPlaying && currentTime >= duration - 2) {
-                        // קרוב לסוף - נסה לעבור לשיר הבא
-                        console.log('⏭️ מעביר לשיר הבא...');
-                        if (player.nextVideo) {
-                            player.nextVideo();
+                    // דילוג אגרסיבי במיוחד ב-PWA
+                    if (isAdPlaying) {
+                        if (currentTime < duration - 1) {
+                            // קפיצה גדולה יותר ב-PWA
+                            const skipAmount = isPWA ? 15 : 10;
+                            const skipTo = Math.min(duration - 0.3, currentTime + skipAmount);
+                            player.seekTo(skipTo, true);
+                        } else {
+                            // כמעט בסוף - עבור לשיר הבא
+                            console.log('⏭️ מעביר לשיר הבא...');
+                            if (player.nextVideo) {
+                                player.nextVideo();
+                            }
                         }
                     }
                 } else {
@@ -1018,9 +1053,12 @@
             if (adDetectionInterval) {
                 clearInterval(adDetectionInterval);
             }
-            // בדיקה כל 300 מילישניות (מהיר יותר)
-            adDetectionInterval = setInterval(detectAndSkipAds, 300);
-            console.log('🛡️ מערכת זיהוי פרסומות הופעלה');
+            // בדיקה כל 200 מילישניות ב-PWA, 300 בדפדפן רגיל
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                          window.navigator.standalone === true;
+            const checkInterval = isPWA ? 200 : 300;
+            adDetectionInterval = setInterval(detectAndSkipAds, checkInterval);
+            console.log(`🛡️ מערכת זיהוי פרסומות הופעלה (${isPWA ? 'PWA' : 'Browser'} mode, ${checkInterval}ms)`);
         }
         
         // עצירת זיהוי פרסומות
