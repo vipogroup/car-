@@ -407,6 +407,71 @@
             transform: scale(0.95);
         }
 
+        /* הודעת הרשאות */
+        .permission-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1db954, #1ed760);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        .permission-notification h3 {
+            margin: 0 0 15px 0;
+            font-size: 24px;
+        }
+
+        .permission-notification p {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        .permission-notification .permission-list {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: right;
+        }
+
+        .permission-notification button {
+            background: white;
+            color: #1db954;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .permission-notification button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
     </style>
 </head>
 <body>
@@ -1522,9 +1587,94 @@
             });
         }
 
+        // בקשת הרשאות מהמשתמש
+        async function requestAllPermissions() {
+            console.log('🔐 מבקש הרשאות מהמשתמש...');
+            
+            const permissions = [];
+            
+            // 1. הרשאות להתראות
+            if ('Notification' in window && Notification.permission === 'default') {
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        permissions.push('✅ התראות');
+                        // הצג התראת דוגמה
+                        new Notification('🎵 נגן מוזיקה לרכב', {
+                            body: 'האפליקציה תמשיך לנגן גם ברקע! 🚗',
+                            icon: 'car-music-icon.png',
+                            tag: 'welcome',
+                            requireInteraction: false
+                        });
+                    } else {
+                        permissions.push('❌ התראות (נדחה)');
+                    }
+                } catch (e) {
+                    console.warn('לא ניתן לבקש הרשאות התראות:', e);
+                }
+            } else if (Notification.permission === 'granted') {
+                permissions.push('✅ התראות (כבר ניתנו)');
+            }
+            
+            // 2. Wake Lock - למניעת כיבוי מסך
+            if ('wakeLock' in navigator) {
+                try {
+                    const wakeLock = await navigator.wakeLock.request('screen');
+                    permissions.push('✅ מניעת כיבוי מסך');
+                    console.log('🔒 Wake Lock הופעל');
+                } catch (e) {
+                    permissions.push('⚠️ מניעת כיבוי מסך (ינסה שוב)');
+                }
+            }
+            
+            // 3. הצגת סיכום הרשאות
+            if (permissions.length > 0) {
+                console.log('📋 הרשאות שהתקבלו:');
+                permissions.forEach(p => console.log('  ' + p));
+                
+                // הצג הודעה יפה למשתמש
+                const permissionList = permissions.map(p => `<div style="margin: 5px 0;">${p}</div>`).join('');
+                
+                const notification = document.createElement('div');
+                notification.className = 'permission-notification';
+                notification.innerHTML = `
+                    <h3>🎵 נגן מוזיקה לרכב</h3>
+                    <p><strong>הרשאות שהתקבלו:</strong></p>
+                    <div class="permission-list">
+                        ${permissionList}
+                    </div>
+                    <p style="font-size: 18px; font-weight: bold;">
+                        ✨ האפליקציה תמשיך לנגן<br>גם כשתעבור לאפליקציות אחרות! 🚗
+                    </p>
+                    <button onclick="this.parentElement.remove()">הבנתי! 👍</button>
+                `;
+                
+                setTimeout(() => {
+                    document.body.appendChild(notification);
+                    
+                    // הסר אוטומטית אחרי 8 שניות
+                    setTimeout(() => {
+                        if (notification.parentElement) {
+                            notification.style.animation = 'slideIn 0.5s ease reverse';
+                            setTimeout(() => notification.remove(), 500);
+                        }
+                    }, 8000);
+                }, 500);
+            }
+        }
+
         // בדיקת טעינת הדף ומצב הנגן
         window.addEventListener('load', function() {
             console.log('הדף נטען בהצלחה');
+            
+            // בקש הרשאות אחרי לחיצה ראשונה
+            let permissionsRequested = false;
+            document.addEventListener('click', async () => {
+                if (!permissionsRequested) {
+                    permissionsRequested = true;
+                    await requestAllPermissions();
+                }
+            }, { once: true });
             
             // עדכון כפתורי ניווט פלייליסטים
             updatePlaylistNavigation();
