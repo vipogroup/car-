@@ -589,7 +589,13 @@
             <button class="control-btn" onclick="buttonClickEffect(this); openPlaylistManager()">⚙️ ניהול פלייליסטים</button>
             <button class="control-btn" onclick="buttonClickEffect(this); nextPlaylist()" id="nextPlaylistBtn" style="display: none;">פלייליסט הבא ⏭️</button>
         </div>
-        
+
+        <!-- כפתורי ערבוב -->
+        <div class="control-buttons" style="margin-top: 10px;">
+            <button class="control-btn shuffle-btn" id="songShuffleBtn" onclick="buttonClickEffect(this); toggleSongShuffle()">🔀 ערבוב שירים</button>
+            <button class="control-btn shuffle-btn" id="playlistShuffleBtn" onclick="buttonClickEffect(this); togglePlaylistShuffle()">🔁 ערבוב פלייליסטים</button>
+        </div>
+
         <!-- תצוגת שיר נוכחי -->
         <div class="current-song-container" id="currentSongContainer">
             <div class="current-song-label">שיר נוכחי:</div>
@@ -654,7 +660,13 @@
 
         let player;
         let currentPlaylistIndex = 0;
-        let isShuffle = false;
+        let isShuffle = false; // legacy flag (kept for compatibility)
+        let songShuffleEnabled = localStorage.getItem('songShuffleEnabled') === 'true';
+        let playlistShuffleEnabled = localStorage.getItem('playlistShuffleEnabled') === 'true';
+        let songShuffleQueue = [];
+        let songShuffleHistory = [];
+        let playlistShuffleQueue = [];
+        let playlistShuffleHistory = [];
         let isDayMode = false; // מצב ברירת מחדל: מצב לילה
         let lastVolume = 100; // נוסיף משתנה לשמירת עוצמת הקול האחרונה
         let deferredPrompt; // לשמירת האירוע של התקנת PWA
@@ -706,6 +718,224 @@
                 if (nextBtn) nextBtn.style.display = 'none';
                 console.log('⚠️ כפתורי ניווט מוסתרים - יש רק פלייליסט אחד');
             }
+        }
+
+        // פונקציות עזר לערבוב
+        function updateShuffleButtons() {
+            const songBtn = document.getElementById('songShuffleBtn');
+            if (songBtn) {
+                songBtn.classList.toggle('active', songShuffleEnabled);
+                songBtn.textContent = songShuffleEnabled ? '🔀 ערבוב שירים פעיל' : '🔀 ערבוב שירים';
+            }
+
+            const playlistBtn = document.getElementById('playlistShuffleBtn');
+            if (playlistBtn) {
+                playlistBtn.classList.toggle('active', playlistShuffleEnabled);
+                playlistBtn.textContent = playlistShuffleEnabled ? '🔁 ערבוב פלייליסטים פעיל' : '🔁 ערבוב פלייליסטים';
+            }
+        }
+
+        function shuffleArray(array) {
+            const arr = array.slice();
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function buildSongShuffleQueue() {
+            if (!songShuffleEnabled || !player || typeof player.getPlaylist !== 'function') {
+                return;
+            }
+
+            const playlist = player.getPlaylist();
+            if (!playlist || playlist.length <= 1) {
+                songShuffleQueue = [];
+                return;
+            }
+
+            const currentIndex = typeof player.getPlaylistIndex === 'function' ? player.getPlaylistIndex() : -1;
+            const indices = playlist.map((_, index) => index);
+            const available = currentIndex >= 0 ? indices.filter(index => index !== currentIndex) : indices;
+            songShuffleQueue = shuffleArray(available);
+            console.log('🔀 נבנתה רשימת ערבוב לשירים:', songShuffleQueue);
+        }
+
+        function ensureSongShuffleQueue() {
+            if (!songShuffleEnabled) return;
+            if (songShuffleQueue.length === 0) {
+                buildSongShuffleQueue();
+            }
+        }
+
+        function playNextShuffledSong() {
+            if (!songShuffleEnabled || !player) {
+                return false;
+            }
+
+            ensureSongShuffleQueue();
+            if (songShuffleQueue.length === 0) {
+                return false;
+            }
+
+            const currentIndex = typeof player.getPlaylistIndex === 'function' ? player.getPlaylistIndex() : -1;
+            if (currentIndex >= 0) {
+                songShuffleHistory.push(currentIndex);
+                if (songShuffleHistory.length > 50) {
+                    songShuffleHistory.shift();
+                }
+            }
+
+            const nextIndex = songShuffleQueue.shift();
+            if (typeof nextIndex !== 'number') {
+                return false;
+            }
+
+            try {
+                player.playVideoAt(nextIndex);
+                console.log(`🎲 מעבר אקראי לשיר במיקום ${nextIndex}`);
+                return true;
+            } catch (err) {
+                console.warn('⚠️ לא ניתן לנגן שיר אקראי:', err);
+                return false;
+            }
+        }
+
+        function playPreviousShuffledSong() {
+            if (!songShuffleEnabled || !player) {
+                return false;
+            }
+
+            if (songShuffleHistory.length === 0) {
+                return false;
+            }
+
+            const previousIndex = songShuffleHistory.pop();
+            const currentIndex = typeof player.getPlaylistIndex === 'function' ? player.getPlaylistIndex() : -1;
+            if (currentIndex >= 0 && !songShuffleQueue.includes(currentIndex)) {
+                songShuffleQueue.unshift(currentIndex);
+            }
+
+            if (typeof previousIndex !== 'number') {
+                return false;
+            }
+
+            try {
+                player.playVideoAt(previousIndex);
+                console.log(`⏮️ חזרה לשיר ממערך ההיסטוריה (מיקום ${previousIndex})`);
+                return true;
+            } catch (err) {
+                console.warn('⚠️ לא ניתן לחזור לשיר קודם בערבוב:', err);
+                return false;
+            }
+        }
+
+        function resetSongShuffleState() {
+            songShuffleQueue = [];
+            songShuffleHistory = [];
+            if (songShuffleEnabled) {
+                setTimeout(buildSongShuffleQueue, 500);
+            }
+        }
+
+        function toggleSongShuffle() {
+            songShuffleEnabled = !songShuffleEnabled;
+            localStorage.setItem('songShuffleEnabled', songShuffleEnabled);
+            songShuffleQueue = [];
+            songShuffleHistory = [];
+
+            if (player && typeof player.setShuffle === 'function') {
+                try {
+                    player.setShuffle(songShuffleEnabled);
+                } catch (err) {
+                    console.warn('⚠️ לא ניתן לעדכן מצב shuffle של הנגן:', err);
+                }
+            }
+
+            if (songShuffleEnabled) {
+                console.log('🔀 מצב ערבוב שירים הופעל');
+                buildSongShuffleQueue();
+            } else {
+                console.log('⏹️ מצב ערבוב שירים הושבת');
+            }
+
+            updateShuffleButtons();
+        }
+
+        function buildPlaylistShuffleQueue() {
+            if (!playlistShuffleEnabled || playlists.length <= 1) {
+                playlistShuffleQueue = [];
+                return;
+            }
+
+            const indices = playlists.map((_, index) => index);
+            const available = indices.filter(index => index !== currentPlaylistIndex);
+            playlistShuffleQueue = shuffleArray(available);
+            console.log('🔁 נבנתה רשימת ערבוב לפלייליסטים:', playlistShuffleQueue);
+        }
+
+        function getNextPlaylistIndex() {
+            if (!playlistShuffleEnabled || playlists.length <= 1) {
+                return (currentPlaylistIndex + 1) % playlists.length;
+            }
+
+            if (playlistShuffleQueue.length === 0) {
+                buildPlaylistShuffleQueue();
+            }
+
+            if (playlistShuffleQueue.length === 0) {
+                return currentPlaylistIndex;
+            }
+
+            const nextIndex = playlistShuffleQueue.shift();
+            playlistShuffleHistory.push(currentPlaylistIndex);
+            if (playlistShuffleHistory.length > 50) {
+                playlistShuffleHistory.shift();
+            }
+            return typeof nextIndex === 'number' ? nextIndex : currentPlaylistIndex;
+        }
+
+        function getPreviousPlaylistIndex() {
+            if (!playlistShuffleEnabled || playlists.length <= 1) {
+                return (currentPlaylistIndex - 1 + playlists.length) % playlists.length;
+            }
+
+            if (playlistShuffleHistory.length > 0) {
+                const previousIndex = playlistShuffleHistory.pop();
+                if (typeof previousIndex === 'number') {
+                    if (!playlistShuffleQueue.includes(currentPlaylistIndex)) {
+                        playlistShuffleQueue.unshift(currentPlaylistIndex);
+                    }
+                    return previousIndex;
+                }
+            }
+
+            if (playlistShuffleQueue.length === 0) {
+                buildPlaylistShuffleQueue();
+            }
+
+            if (playlistShuffleQueue.length === 0) {
+                return currentPlaylistIndex;
+            }
+
+            return playlistShuffleQueue.pop();
+        }
+
+        function togglePlaylistShuffle() {
+            playlistShuffleEnabled = !playlistShuffleEnabled;
+            localStorage.setItem('playlistShuffleEnabled', playlistShuffleEnabled);
+            playlistShuffleQueue = [];
+            playlistShuffleHistory = [];
+
+            if (playlistShuffleEnabled) {
+                console.log('🔁 מצב ערבוב פלייליסטים הופעל');
+                buildPlaylistShuffleQueue();
+            } else {
+                console.log('⏹️ מצב ערבוב פלייליסטים הושבת');
+            }
+
+            updateShuffleButtons();
         }
 
         // פתיחת מודאל ניהול פלייליסטים
@@ -847,10 +1077,16 @@
                         if (player && player.pauseVideo) {
                             player.pauseVideo();
                         }
-                        // אם המשתמש בחר ערבוב מראש, נשמור את ההעדפה וננגן רק אחרי לחיצה
-                        if (isShuffle && player && player.setShuffle) {
-                            player.setShuffle(true);
+                        // אתחול מצב ערבוב שירים אם הופעל בעבר
+                        if (songShuffleEnabled && player && player.setShuffle) {
+                            try {
+                                player.setShuffle(true);
+                                buildSongShuffleQueue();
+                            } catch (err) {
+                                console.warn('⚠️ לא ניתן להפעיל מצב ערבוב בעת טעינת הנגן:', err);
+                            }
                         }
+                        updateShuffleButtons();
                     },
                     'onStateChange': (event) => {
                         // עדכון שם השיר כאשר השיר משתנה
@@ -902,27 +1138,42 @@
         function pauseVideo() {
             if (player && player.pauseVideo) {
                 player.pauseVideo();
-                stopAdDetection(); // עצור זיהוי פרסומות
+                stopAdDetection();
             }
         }
 
         function nextTrack() {
-            if (player && player.nextVideo) {
-                hasUserInteracted = true;
+            if (!player) return;
+
+            hasUserInteracted = true;
+
+            if (songShuffleEnabled && playNextShuffledSong()) {
+                return;
+            }
+
+            if (player.nextVideo) {
                 player.nextVideo();
             }
         }
 
         function previousTrack() {
-            if (player && player.previousVideo) {
-                hasUserInteracted = true;
+            if (!player) return;
+
+            hasUserInteracted = true;
+
+            if (songShuffleEnabled && playPreviousShuffledSong()) {
+                return;
+            }
+
+            if (player.previousVideo) {
                 player.previousVideo();
             }
         }
 
         function nextPlaylist() {
             const oldIndex = currentPlaylistIndex;
-            currentPlaylistIndex = (currentPlaylistIndex + 1) % playlists.length;
+            const targetIndex = getNextPlaylistIndex();
+            currentPlaylistIndex = targetIndex;
             console.log(`⏭️ מעבר מפלייליסט ${oldIndex} (${playlists[oldIndex].name}) לפלייליסט ${currentPlaylistIndex} (${playlists[currentPlaylistIndex].name})`);
             hasUserInteracted = true;
             
@@ -942,7 +1193,8 @@
 
         function previousPlaylist() {
             const oldIndex = currentPlaylistIndex;
-            currentPlaylistIndex = (currentPlaylistIndex - 1 + playlists.length) % playlists.length;
+            const targetIndex = getPreviousPlaylistIndex();
+            currentPlaylistIndex = targetIndex;
             console.log(`⏮️ מעבר מפלייליסט ${oldIndex} (${playlists[oldIndex].name}) לפלייליסט ${currentPlaylistIndex} (${playlists[currentPlaylistIndex].name})`);
             hasUserInteracted = true;
             
@@ -966,6 +1218,10 @@
             try {
                 if (player) {
                     player.destroy();
+                }
+                resetSongShuffleState();
+                if (playlistShuffleEnabled) {
+                    buildPlaylistShuffleQueue();
                 }
                 
                 // יצירת נגן חדש לאחר השהייה קצרה
@@ -994,37 +1250,6 @@
                     '&autoplay=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
 
                 updatePlaylistName();
-            }
-        }
-
-        function toggleShuffle() {
-            if (!player || !player.getPlaylist) {
-                return;
-            }
-
-            isShuffle = !isShuffle;
-
-            try {
-                if (player.setShuffle) {
-                    player.setShuffle(isShuffle);
-                }
-            } catch (err) {
-                console.warn('לא ניתן לעדכן מצב Shuffle:', err);
-            }
-
-            if (isShuffle) {
-                shufflePlaylist();
-            }
-        }
-
-        function shufflePlaylist() {
-            if (player && player.getPlaylist) {
-                hasUserInteracted = true;
-                let playlist = player.getPlaylist();
-                if (playlist && playlist.length > 0) {
-                    let randomIndex = Math.floor(Math.random() * playlist.length);
-                    player.playVideoAt(randomIndex);
-                }
             }
         }
 
