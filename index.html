@@ -472,6 +472,54 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
+        /* באנר עדכון */
+        #updateBanner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            z-index: 10001;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        #updateBanner button {
+            background: white;
+            color: #3498db;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        #updateBanner button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #updateBanner .dismiss-btn {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
         /* אנימציה לאינדיקטור קולי */
         @keyframes pulse {
             0%, 100% {
@@ -487,6 +535,25 @@
     </style>
 </head>
 <body>
+    <!-- באנר עדכון -->
+    <div id="updateBanner" style="display: none;">
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">
+            🔄 עדכון חדש זמין!
+        </div>
+        <div style="font-size: 14px; margin-bottom: 10px;">
+            גרסה חדשה עם שיפורים ותכונות נוספות מחכה לך
+        </div>
+        <div class="version-info" style="font-size: 13px; margin-bottom: 10px; opacity: 0.9;">
+            גרסה עדכנית
+        </div>
+        <button onclick="updateApp()" style="background: #27ae60; color: white;">
+            ✅ עדכן עכשיו
+        </button>
+        <button onclick="dismissUpdate()" class="dismiss-btn">
+            ⏰ אחר כך
+        </button>
+    </div>
+
     <!-- מתג יום/לילה -->
     <div class="mode-switch" onclick="toggleDayNightMode()">
         <span class="mode-icon" id="mode-icon">🌙</span>
@@ -574,6 +641,17 @@
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
+        // גרסת האפליקציה
+        const APP_VERSION = "2.2.0";
+        console.log(`🎵 נגן מוזיקה לרכב - גרסה ${APP_VERSION}`);
+
+        // משתני מערכת עדכונים
+        let newServiceWorker = null;
+        let updateAvailable = false;
+        let updatePending = false;
+        let refreshing = false;
+        let updateListenerAttached = false;
+
         let player;
         let currentPlaylistIndex = 0;
         let isShuffle = false;
@@ -1746,11 +1824,113 @@
                         registration.addEventListener('updatefound', () => {
                             console.log('🔄 נמצא עדכון ל-Service Worker');
                         });
+
+                        checkForUpdates();
                     })
                     .catch(error => {
                         console.error('❌ רישום Service Worker נכשל:', error);
                     });
+
+                // בדיקת עדכונים מיד לאחר טעינה
+                checkForUpdates();
             });
+
+            if (!updateListenerAttached) {
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (updatePending && !refreshing) {
+                        refreshing = true;
+                        console.log('🔁 טעינת הדף לאחר עדכון Service Worker');
+                        window.location.reload();
+                    }
+                });
+                updateListenerAttached = true;
+            }
+        }
+
+        // מערכת עדכונים
+        function updateApp() {
+            console.log('🔄 מתחיל עדכון...');
+            
+            if (newServiceWorker) {
+                updatePending = true;
+                // שליחת הוראה ל-Service Worker לדלג על מצב המתנה
+                newServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+                
+                const banner = document.getElementById('updateBanner');
+                banner.innerHTML = `
+                    <div style="font-size: 18px; font-weight: bold;">
+                        ⏳ מעדכן את האפליקציה...
+                    </div>
+                    <div style="margin-top: 10px;">
+                        אנא המתן לרענון אוטומטי
+                    </div>
+                `;
+            } else {
+                console.log('⚠️ אין Service Worker חדש זמין');
+                dismissUpdate();
+            }
+        }
+        
+        function dismissUpdate() {
+            console.log('⏰ דחיית עדכון לאחר כך');
+            const banner = document.getElementById('updateBanner');
+            if (banner) {
+                banner.style.display = 'none';
+            }
+            updateAvailable = false;
+        }
+        
+        function showUpdateBanner() {
+            console.log('🔔 מציג באנר עדכון');
+            const banner = document.getElementById('updateBanner');
+            if (!banner) return;
+            banner.style.display = 'block';
+            updateAvailable = true;
+            
+            // עדכן את הודעת הבאנר עם גרסת האפליקציה
+            const versionInfo = banner.querySelector('.version-info');
+            if (versionInfo) {
+                versionInfo.textContent = `גרסה ${APP_VERSION}`;
+            }
+            
+            // התראה אם הדפדפן תומך
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('🔄 עדכון זמין!', {
+                    body: 'גרסה חדשה של נגן המוזיקה זמינה לעדכון',
+                    icon: 'car-music-icon.png',
+                    tag: 'update',
+                    requireInteraction: false
+                });
+            }
+        }
+
+        function checkForUpdates() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(registration => {
+                    if (!registration) return;
+                    
+                    registration.update();
+
+                    if (registration.waiting) {
+                        newServiceWorker = registration.waiting;
+                        showUpdateBanner();
+                    }
+
+                    registration.addEventListener('updatefound', () => {
+                        console.log('🔍 נמצא Service Worker חדש');
+                        newServiceWorker = registration.installing;
+                        newServiceWorker.addEventListener('statechange', () => {
+                            if (newServiceWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    showUpdateBanner();
+                                } else {
+                                    console.log('✅ האפליקציה הותקנה לראשונה');
+                                }
+                            }
+                        });
+                    });
+                });
+            }
         }
 
         // מערכת זיהוי קולי
@@ -1935,7 +2115,10 @@
             } else if (Notification.permission === 'granted') {
                 permissions.push('✅ התראות (כבר ניתנו)');
             }
-            
+
+            // 3. בדיקת עדכונים בעת הרשאות
+            checkForUpdates();
+
             // 2. Wake Lock - למניעת כיבוי מסך
             if ('wakeLock' in navigator) {
                 try {

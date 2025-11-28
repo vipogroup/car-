@@ -1,5 +1,5 @@
 // Service Worker לשמירה על האפליקציה פעילה ברקע
-const CACHE_NAME = 'car-music-player-v1';
+const CACHE_NAME = 'car-music-player-v220';
 const urlsToCache = [
   'index.html',
   'manifest.json',
@@ -72,14 +72,22 @@ self.addEventListener('fetch', event => {
 
 // שמירה על פעילות ברקע
 self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'KEEP_ALIVE') {
-    console.log('💓 Service Worker Heartbeat:', new Date(event.data.timestamp).toLocaleTimeString());
-    
-    // שלח תשובה חזרה
-    event.ports[0]?.postMessage({
-      type: 'ALIVE',
-      timestamp: Date.now()
-    });
+  if (!event.data || !event.data.type) return;
+
+  switch (event.data.type) {
+    case 'KEEP_ALIVE':
+      console.log('💓 Service Worker Heartbeat:', new Date(event.data.timestamp).toLocaleTimeString());
+      event.ports[0]?.postMessage({
+        type: 'ALIVE',
+        timestamp: Date.now()
+      });
+      break;
+    case 'SKIP_WAITING':
+      console.log('⏭️ מתקבל SKIP_WAITING - מפעיל מיד את Service Worker החדש');
+      self.skipWaiting();
+      break;
+    default:
+      break;
   }
 });
 
