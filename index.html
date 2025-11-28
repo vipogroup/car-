@@ -609,6 +609,20 @@
 
         <button class="back-btn" onclick="buttonClickEffect(this); goBack()">🔙 חזרה לתפריט הראשי</button>
         
+        <!-- הודעת הרשאות -->
+        <div id="permissionBanner" style="display: none; background: linear-gradient(135deg, rgba(29, 185, 84, 0.2) 0%, rgba(30, 215, 96, 0.1) 100%); backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(29, 185, 84, 0.3); text-align: center;">
+            <div style="font-size: 14px; color: #1db954; margin-bottom: 10px; font-weight: 600;">
+                🔐 כדי שהמוזיקה תמשיך לנגן ברקע
+            </div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.8); margin-bottom: 12px;">
+                נדרשות הרשאות: התראות, מניעת כיבוי מסך, ואחסון קבוע
+            </div>
+            <button onclick="requestAllPermissions(); document.getElementById('permissionBanner').style.display='none';" 
+                style="background: linear-gradient(135deg, #1db954 0%, #1ed760 100%); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(29, 185, 84, 0.4);">
+                ✅ אשר הרשאות
+            </button>
+        </div>
+        
         <!-- הוסרו קיצורי מקלדת כדי לחסוך מקום במסך -->
     </div>
 
@@ -665,6 +679,78 @@
             { name: "🎸 רוק ישראלי 🇮🇱", id: "PLWkfrFkdyL1Fdaso2jWg1gevOxRe2jKvG" },
             { name: "🎤 מזרחית מושלמת 💃", id: "PLWkfrFkdyL1Fdaso2jWg1gevOxRe2jKvG" }
         ];
+        
+        // בקשת הרשאות מפורשת מהמשתמש
+        async function requestAllPermissions() {
+            console.log('🔐 מבקש הרשאות מהמשתמש...');
+            
+            const permissions = {
+                notifications: false,
+                wakeLock: false,
+                persistentStorage: false
+            };
+            
+            // 1. בקשת הרשאות התראות
+            if ('Notification' in window) {
+                try {
+                    const permission = await Notification.requestPermission();
+                    permissions.notifications = permission === 'granted';
+                    if (permissions.notifications) {
+                        console.log('✅ הרשאות התראות ניתנו');
+                        // הצג התראת בדיקה
+                        new Notification('🎵 נגן מוזיקה לרכב', {
+                            body: 'ההרשאות אושרו! המוזיקה תמשיך לנגן ברקע 🚗',
+                            icon: 'car-music-icon.png',
+                            tag: 'permission-granted'
+                        });
+                    }
+                } catch (e) {
+                    console.warn('⚠️ לא ניתן לבקש הרשאות התראות:', e);
+                }
+            }
+            
+            // 2. בקשת Wake Lock
+            if ('wakeLock' in navigator) {
+                try {
+                    const wakeLock = await navigator.wakeLock.request('screen');
+                    permissions.wakeLock = true;
+                    console.log('✅ Wake Lock הופעל - המסך לא יכבה');
+                    wakeLock.addEventListener('release', () => {
+                        console.log('⚠️ Wake Lock שוחרר');
+                    });
+                } catch (e) {
+                    console.warn('⚠️ Wake Lock נכשל:', e);
+                }
+            }
+            
+            // 3. בקשת אחסון קבוע (Persistent Storage)
+            if ('storage' in navigator && 'persist' in navigator.storage) {
+                try {
+                    const isPersisted = await navigator.storage.persist();
+                    permissions.persistentStorage = isPersisted;
+                    if (isPersisted) {
+                        console.log('✅ אחסון קבוע אושר - הנתונים לא יימחקו');
+                    } else {
+                        console.warn('⚠️ אחסון קבוע נדחה');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ לא ניתן לבקש אחסון קבוע:', e);
+                }
+            }
+            
+            // 4. הצגת סיכום למשתמש
+            const grantedCount = Object.values(permissions).filter(p => p).length;
+            const totalCount = Object.keys(permissions).length;
+            
+            console.log(`📊 הרשאות שאושרו: ${grantedCount}/${totalCount}`);
+            console.log('📋 פירוט הרשאות:', permissions);
+            
+            // שמור בלוקל סטורג' שההרשאות התבקשו
+            localStorage.setItem('permissionsRequested', 'true');
+            localStorage.setItem('permissionsGranted', JSON.stringify(permissions));
+            
+            return permissions;
+        }
         
         // שמירת פלייליסטים ב-LocalStorage
         function savePlaylists() {
@@ -782,6 +868,12 @@
             // הצגת הודעה למשתמש שהפלייליסט נטען
             document.getElementById('currentSong').textContent = 'טוען פלייליסט... אנא המתן';
             
+            // בדוק אם ההרשאות כבר התבקשו
+            const permissionsRequested = localStorage.getItem('permissionsRequested');
+            if (!permissionsRequested) {
+                console.log('🔔 הרשאות טרם התבקשו - יבוקשו בלחיצה הראשונה');
+            }
+            
             try {
                 createPlayer();
             } catch (e) {
@@ -858,9 +950,17 @@
             document.getElementById('playlistName').textContent = playlists[currentPlaylistIndex].name;
         }
 
-        function playVideo() {
+        async function playVideo() {
             if (player && player.playVideo) {
                 hasUserInteracted = true;
+                
+                // בקש הרשאות בפעם הראשונה
+                const permissionsRequested = localStorage.getItem('permissionsRequested');
+                if (!permissionsRequested) {
+                    console.log('🔐 מבקש הרשאות לפני ניגון...');
+                    await requestAllPermissions();
+                }
+                
                 player.playVideo();
                 startAdDetection(); // הפעל זיהוי פרסומות
             }
@@ -1688,6 +1788,18 @@
             
             // עדכון כפתורי ניווט פלייליסטים
             updatePlaylistNavigation();
+            
+            // הצג באנר הרשאות אם לא התבקשו
+            const permissionsRequested = localStorage.getItem('permissionsRequested');
+            if (!permissionsRequested) {
+                setTimeout(() => {
+                    const banner = document.getElementById('permissionBanner');
+                    if (banner) {
+                        banner.style.display = 'block';
+                        console.log('📢 מציג באנר בקשת הרשאות');
+                    }
+                }, 2000); // הצג אחרי 2 שניות
+            }
             
             // בדיקה שכל האלמנטים מוצגים
             setTimeout(function() {
