@@ -1,0 +1,972 @@
+
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎶 נגן שירים לרכב 🚗</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- מניעת כיבוי מסך -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- הגדרות PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1db954">
+    <link rel="apple-touch-icon" href="car-music-icon.png">
+    <link rel="icon" type="image/png" href="car-music-icon.png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #222;
+            color: white;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            font-size: 16px;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            box-sizing: border-box;
+        }
+
+        .music-player {
+            width: 100%;
+            max-width: 500px;
+            background: #333;
+            padding: 10px;
+            border-radius: 15px;
+            border: 2px solid #1db954;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-height: 100vh;
+            overflow: visible;
+            position: relative;
+            z-index: 1;
+            gap: 10px;
+        }
+
+        .video-frame {
+            width: 100%;
+            height: 25vh;
+            min-height: 180px;
+            max-height: 200px;
+            border-radius: 10px;
+            border: 2px solid #1db954;
+            overflow: hidden;
+            background-color: #000;
+            margin-bottom: 5px;
+        }
+        
+        .video-frame iframe {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        .control-buttons {
+            display: flex !important;
+            justify-content: center;
+            gap: 5px;
+            margin: 5px 0;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: #1db954;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            min-width: 40px;
+            min-height: 40px;
+            margin: 2px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .control-btn:hover {
+            background: #17a450;
+        }
+
+        .shuffle-btn.active {
+            background: #0b6838 !important;
+            box-shadow: 0 0 10px #0b6838;
+        }
+
+        .playlist-name {
+            margin: 5px 0;
+            font-size: 1.2em;
+            color: #1db954;
+            font-weight: bold;
+            padding: 5px;
+            display: block !important;
+            visibility: visible !important;
+            width: 100%;
+        }
+
+        .back-btn {
+            background: #ff3333;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 5px;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: none;
+            color: white;
+        }
+
+        .back-btn:hover {
+            background: #cc0000;
+        }
+
+        /* אפקט הבהוב לכפתור שנלחץ */
+        @keyframes flashEffect {
+            0% { background-color: #1db954; }
+            50% { background-color: #004080; }
+            100% { background-color: #1db954; }
+        }
+
+        .active-effect {
+            animation: flashEffect 0.3s ease-in-out;
+        }
+        
+        /* בעיית תצוגה - תיקון אלמנטים שלא מוצגים */
+        .control-buttons, .playlist-name, .current-song-container, .volume-control {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            margin: 10px 0 !important;
+        }
+        
+        /* סגנון תצוגת שיר נוכחי */
+        .current-song-container {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 10px;
+            margin: 5px 0;
+            border-right: 2px solid #1db954;
+            width: 100%;
+            text-align: right;
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        .day-mode .current-song-container {
+            background: rgba(0, 0, 0, 0.1);
+            border-left: 3px solid #4169E1;
+        }
+        
+        .current-song-label {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        
+        .current-song {
+            font-weight: bold;
+            font-size: 1em;
+            color: #1db954;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        
+        /* סגנון בקר עוצמת שמע */
+        .volume-control {
+            width: 100%;
+            display: flex !important;
+            align-items: center;
+            gap: 5px;
+            margin: 5px 0;
+            justify-content: center;
+            visibility: visible !important;
+        }
+        
+        .volume-slider {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #444;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #1db954;
+            cursor: pointer;
+        }
+        
+        .volume-slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #1db954;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .day-mode .volume-slider::-webkit-slider-thumb {
+            background: #4169E1;
+        }
+        
+        .day-mode .volume-slider::-moz-range-thumb {
+            background: #4169E1;
+        }
+        
+        .volume-icon {
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        /* סגנון קישור התקנה למסך הבית */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(29, 185, 84, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.5s;
+            direction: rtl;
+            text-align: center;
+        }
+        
+        .day-mode .install-prompt {
+            background: rgba(65, 105, 225, 0.9);
+        }
+        
+        .install-prompt button {
+            background: white;
+            color: #1db954;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .day-mode .install-prompt button {
+            color: #4169E1;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .day-mode .current-song {
+            color: #4169E1;
+        }
+
+        /* סגנון מתג יום/לילה */
+        .mode-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .mode-icon {
+            font-size: 24px;
+        }
+
+        /* סגנון למצב יום */
+        .day-mode {
+            background: linear-gradient(135deg, #89CFF0, #6495ED, #4169E1) !important;
+        }
+
+        .day-mode .music-player {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            box-shadow: 0 0 20px #4169E1;
+        }
+
+        .day-mode .control-btn {
+            background: #4169E1;
+        }
+
+        .day-mode .control-btn:hover {
+            background: #1E90FF;
+        }
+
+        .day-mode .playlist-name {
+            color: #4169E1;
+        }
+
+        .day-mode .back-btn {
+            background: #FF6347;
+        }
+
+        .day-mode .back-btn:hover {
+            background: #FF4500;
+        }
+
+        /* התאמה למסכים קטנים */
+        /* התאמה למסכים שונים */
+        @media (max-height: 700px) {
+            .music-player {
+                transform: scale(0.9);
+                margin-top: -20px;
+            }
+            .video-frame {
+                height: 25vh;
+            }
+        }
+        @media (max-width: 768px) {
+            .control-btn {
+                padding: 12px 20px;
+                font-size: 20px;
+                min-width: 60px;
+                min-height: 60px;
+            }
+            
+            .mode-switch {
+                top: 10px;
+                right: 10px;
+            }
+        }
+        
+        /* התאמה למחשב שולחני */
+        @media (min-width: 1024px) {
+            .music-player {
+                max-width: 900px;
+            }
+            
+            .control-buttons {
+                margin: 10px auto;
+            }
+            
+            /* אפקטים למעבר עכבר על כפתורים */
+            .control-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <!-- מתג יום/לילה -->
+    <div class="mode-switch" onclick="toggleDayNightMode()">
+        <span class="mode-icon" id="mode-icon">🌙</span>
+    </div>
+
+    <div class="music-player" id="musicPlayer">
+        <h2 style="font-size: 22px; margin: 5px 0;">🎶 נגן מוזיקה לרכב 🚗</h2>
+        <div id="player" class="video-frame"></div>
+
+        <div class="control-buttons">
+            <button class="control-btn" onclick="buttonClickEffect(this); previousTrack()">⏮</button>
+            <button class="control-btn" onclick="buttonClickEffect(this); playVideo()">▶</button>
+            <button class="control-btn" onclick="buttonClickEffect(this); pauseVideo()">⏸</button>
+            <button class="control-btn" onclick="buttonClickEffect(this); nextTrack()">⏭</button>
+        </div>
+
+        <div class="playlist-name" id="playlistName">🎵 פלייליסט ראשי - נהיגה בכיף 🚗</div>
+        
+        <!-- תצוגת שיר נוכחי -->
+        <div class="current-song-container" id="currentSongContainer">
+            <div class="current-song-label">שיר נוכחי:</div>
+            <div class="current-song" id="currentSong">טוען...</div>
+        </div>
+        
+        <!-- בקר עוצמת שמע -->
+        <div class="volume-control" id="volumeControl">
+            <span class="volume-icon" onclick="toggleMute()" id="volumeIcon">🔊</span>
+            <input type="range" min="0" max="100" value="100" class="volume-slider" id="volumeSlider">
+        </div>
+
+        <button class="back-btn" onclick="buttonClickEffect(this); goBack()">🔙 חזרה לתפריט הראשי</button>
+        
+        <!-- הוסרו קיצורי מקלדת כדי לחסוך מקום במסך -->
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let player;
+        let currentPlaylistIndex = 0;
+        let isShuffle = false;
+        let isDayMode = false; // מצב ברירת מחדל: מצב לילה
+        let lastVolume = 100; // נוסיף משתנה לשמירת עוצמת הקול האחרונה
+        let deferredPrompt; // לשמירת האירוע של התקנת PWA
+        let hasUserInteracted = false; // מניעת autoplay – ננגן רק לאחר לחיצה
+
+        const playlists = [
+            { name: "🎵 פלייליסט ראשי - נהיגה בכיף 🚗", id: "PLWkfrFkdyL1Fdaso2jWg1gevOxRe2jKvG" }
+        ];
+
+        function onYouTubeIframeAPIReady() {
+            console.log('YouTube API נטען בהצלחה');
+            
+            // הצגת הודעה למשתמש שהפלייליסט נטען
+            document.getElementById('currentSong').textContent = 'טוען פלייליסט... אנא המתן';
+            
+            try {
+                createPlayer();
+            } catch (e) {
+                console.error('שגיאה בטעינת נגן YouTube:', e);
+                // ניסיון שני עם השהייה
+                setTimeout(() => {
+                    try {
+                        createPlayer();
+                    } catch (error) {
+                        console.error('ניסיון שני נכשל:', error);
+                        // יצירת iframe ישירות ללא autoplay
+                        document.getElementById('player').innerHTML = '<iframe width="100%" height="350" src="https://www.youtube.com/embed/videoseries?list=' + 
+                            playlists[currentPlaylistIndex].id + 
+                            '&autoplay=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+                    }
+                }, 1500);
+            }
+        }
+
+        function createPlayer() {
+            console.log('יוצר נגן YouTube...');
+            try {
+                player = new YT.Player('player', {
+                    height: '350',
+                    width: '100%',
+                    playerVars: {
+                        'autoplay': 0,
+                        'controls': 1,
+                        'listType': 'playlist',
+                        'list': playlists[currentPlaylistIndex].id,
+                        'rel': 0,
+                        'modestbranding': 1,
+                        'enablejsapi': 1
+                    },
+                events: {
+                    'onReady': () => {
+                        updatePlaylistName();
+                        // הודעה למשתמש שצריך ללחוץ על כפתור הניגון
+                        document.getElementById('currentSong').textContent = 'מוכן לנגן – לחץ על ▶️ כדי להתחיל';
+                        // וידוא שהנגן במצב עצירה עד לפעולה של המשתמש
+                        if (player && player.pauseVideo) {
+                            player.pauseVideo();
+                        }
+                        // אם המשתמש בחר ערבוב מראש, נשמור את ההעדפה וננגן רק אחרי לחיצה
+                        if (isShuffle && player && player.setShuffle) {
+                            player.setShuffle(true);
+                        }
+                    },
+                    'onStateChange': (event) => {
+                        // עדכון שם השיר כאשר השיר משתנה
+                        if (event.data === YT.PlayerState.PLAYING) {
+                            updateCurrentSong();
+                        }
+                    },
+                    'onError': handlePlayerError
+                }
+            });
+            } catch (error) {
+                console.error('שגיאה ביצירת נגן YouTube:', error);
+                // ניסיון שני אם הראשון נכשל
+                setTimeout(() => {
+                    try {
+                        document.getElementById('player').innerHTML = '<iframe width="100%" height="350" src="https://www.youtube.com/embed/videoseries?list=' + 
+                            playlists[currentPlaylistIndex].id + 
+                            '&autoplay=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+                    } catch (e) {
+                        console.error('ניסיון יצירת נגן גיבוי נכשל:', e);
+                    }
+                }, 1000);
+            }
+        }
+
+        function updatePlaylistName() {
+            document.getElementById('playlistName').textContent = playlists[currentPlaylistIndex].name;
+        }
+
+        function playVideo() {
+            if (player && player.playVideo) {
+                hasUserInteracted = true;
+                player.playVideo();
+            }
+        }
+
+        function pauseVideo() {
+            if (player && player.pauseVideo) {
+                player.pauseVideo();
+            }
+        }
+
+        function nextTrack() {
+            if (player && player.nextVideo) {
+                hasUserInteracted = true;
+                player.nextVideo();
+            }
+        }
+
+        function previousTrack() {
+            if (player && player.previousVideo) {
+                hasUserInteracted = true;
+                player.previousVideo();
+            }
+        }
+
+        function nextPlaylist() {
+            currentPlaylistIndex = (currentPlaylistIndex + 1) % playlists.length;
+            console.log(`מעבר לפלייליסט הבא: ${playlists[currentPlaylistIndex].name}`);
+            hasUserInteracted = true;
+            reloadPlayer();
+            
+            // הוספת אפקט ויזואלי כדי שהמשתמש ידע שהפעולה התקבלה
+            const playlistName = document.getElementById('playlistName');
+            playlistName.style.animation = 'none';
+            setTimeout(() => {
+                playlistName.style.animation = 'flashEffect 0.5s';
+            }, 10);
+        }
+
+        function previousPlaylist() {
+            currentPlaylistIndex = (currentPlaylistIndex - 1 + playlists.length) % playlists.length;
+            console.log(`מעבר לפלייליסט הקודם: ${playlists[currentPlaylistIndex].name}`);
+            hasUserInteracted = true;
+            reloadPlayer();
+            
+            // הוספת אפקט ויזואלי כדי שהמשתמש ידע שהפעולה התקבלה
+            const playlistName = document.getElementById('playlistName');
+            playlistName.style.animation = 'none';
+            setTimeout(() => {
+                playlistName.style.animation = 'flashEffect 0.5s';
+            }, 10);
+        }
+
+        function reloadPlayer() {
+            console.log(`טוען מחדש פלייליסט: ${playlists[currentPlaylistIndex].name}`);
+
+            try {
+                if (player) {
+                    player.destroy();
+                }
+                
+                // יצירת נגן חדש לאחר השהייה קצרה
+                setTimeout(() => {
+                    createPlayer();
+                    
+                    // אם היצירה נכשלה, נסה בדרך אחרת
+                    setTimeout(() => {
+                        if (!player || (player && typeof player.getPlayerState !== 'function')) {
+                            console.log('ניסיון לטעון את הפלייליסט בדרך ישירה');
+                            document.getElementById('player').innerHTML = '<iframe width="100%" height="350" src="https://www.youtube.com/embed/videoseries?list=' + 
+                                playlists[currentPlaylistIndex].id + 
+                                '&autoplay=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+
+                            // עדכון שם הפלייליסט גם במצב זה
+                            updatePlaylistName();
+                        }
+                    }, 2000);
+                }, 500);
+            } catch (error) {
+                console.error('שגיאה בטעינת פלייליסט:', error);
+
+                // ניסיון אחרון באמצעות הטמעה ישירה ללא autoplay
+                document.getElementById('player').innerHTML = '<iframe width="100%" height="350" src="https://www.youtube.com/embed/videoseries?list=' + 
+                    playlists[currentPlaylistIndex].id + 
+                    '&autoplay=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+
+                updatePlaylistName();
+            }
+        }
+
+        function toggleShuffle() {
+            if (!player || !player.getPlaylist) {
+                return;
+            }
+
+            isShuffle = !isShuffle;
+
+            try {
+                if (player.setShuffle) {
+                    player.setShuffle(isShuffle);
+                }
+            } catch (err) {
+                console.warn('לא ניתן לעדכן מצב Shuffle:', err);
+            }
+
+            if (isShuffle) {
+                shufflePlaylist();
+            }
+        }
+
+        function shufflePlaylist() {
+            if (player && player.getPlaylist) {
+                hasUserInteracted = true;
+                let playlist = player.getPlaylist();
+                if (playlist && playlist.length > 0) {
+                    let randomIndex = Math.floor(Math.random() * playlist.length);
+                    player.playVideoAt(randomIndex);
+                }
+            }
+        }
+
+        function goBack() {
+            // מכיוון שמדובר ביישום דף בודד, נעביר לדף הדמה של תפריט ראשי
+            alert('תודה שהשתמשת בנגן המוזיקה לרכב!\nזה הדף הראשי של האפליקציה.');
+        }
+
+        function buttonClickEffect(button) {
+            button.classList.add("active-effect");
+            setTimeout(() => {
+                button.classList.remove("active-effect");
+            }, 300);
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+        // פונקציה להחלפת מצב יום/לילה
+        function toggleDayNightMode() {
+            isDayMode = !isDayMode;
+            const body = document.body;
+            const modeIcon = document.getElementById('mode-icon');
+            
+            if (isDayMode) {
+                body.classList.add('day-mode');
+                modeIcon.textContent = '\u2600\uFE0F'; // סמל שמש
+            } else {
+                body.classList.remove('day-mode');
+                modeIcon.textContent = '\ud83c\udf19'; // סמל ירח
+            }
+            
+            // הפעלת אפקט לחיצה על המתג
+            buttonClickEffect(document.querySelector('.mode-switch'));
+        }
+        
+        // בדיקת זמן יום אוטומטית בטעינה
+        function checkDayTime() {
+            const hour = new Date().getHours();
+            // אם השעה בין 7 בבוקר ל-19 בערב, הפעל מצב יום
+            if (hour >= 7 && hour < 19 && !isDayMode) {
+                toggleDayNightMode();
+            }
+        }
+        
+        // בדיקת זמן יום בטעינה
+        window.addEventListener('load', checkDayTime);
+        
+        // מניעת כיבוי מסך
+        function preventScreenSleep() {
+            // שימוש ב-NoSleep.js למניעת כיבוי מסך
+            if ('wakeLock' in navigator) {
+                // אם הדפדפן תומך ב-Wake Lock API
+                let wakeLock = null;
+                
+                const requestWakeLock = async () => {
+                    try {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        console.log('מסך נשאר דלוק - Wake Lock הופעל');
+                        
+                        wakeLock.addEventListener('release', () => {
+                            console.log('Wake Lock שוחרר, מנסה להפעיל מחדש...');
+                            requestWakeLock(); // ניסיון להפעיל מחדש
+                        });
+                    } catch (err) {
+                        console.error(`לא ניתן להפעיל Wake Lock: ${err.name}, ${err.message}`);
+                        // הפעלת שיטה חלופית - נגינת סרטון שקט ללא נראות
+                        fallbackNoSleep();
+                    }
+                };
+                
+                // הפעלת Wake Lock בעת טעינת הדף
+                requestWakeLock();
+                
+                // הפעלה מחדש של Wake Lock כאשר הדף חוזר להיות גלוי
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible' && wakeLock === null) {
+                        requestWakeLock();
+                    }
+                });
+            } else {
+                // שיטה חלופית אם הדפדפן לא תומך ב-Wake Lock API
+                fallbackNoSleep();
+            }
+        }
+        
+        // שיטה חלופית למניעת כיבוי מסך
+        function fallbackNoSleep() {
+            // יצירת אלמנט אודיו שינוגן ברקע בשקט
+            console.log('מפעיל שיטה חלופית למניעת כיבוי מסך');
+            setInterval(() => {
+                // יצירת תזוזה קטנה כל 30 שניות כדי למנוע כיבוי מסך
+                window.scrollBy(0, 1);
+                window.scrollBy(0, -1);
+            }, 30000);
+        }
+        
+        // עדכון שם השיר הנוכחי
+        function updateCurrentSong() {
+            if (player && player.getVideoData) {
+                try {
+                    const videoData = player.getVideoData();
+                    if (videoData && videoData.title) {
+                        document.getElementById('currentSong').textContent = videoData.title;
+                    } else if (hasUserInteracted) {
+                        document.getElementById('currentSong').textContent = 'לא ניתן לקבל מידע על השיר';
+                    }
+                } catch (e) {
+                    console.error('שגיאה בקבלת מידע על השיר:', e);
+                }
+            } else if (!hasUserInteracted) {
+                document.getElementById('currentSong').textContent = 'מוכן לנגן – לחץ על ▶️ כדי להתחיל';
+            }
+        }
+
+        function handlePlayerError(event) {
+            const currentSongLabel = document.getElementById('currentSong');
+            let message = 'לא ניתן לנגן את השיר הנוכחי.';
+
+            switch (event.data) {
+                case 2:
+                    message = 'כתובת הסרטון שגויה או בלתי זמינה.';
+                    break;
+                case 5:
+                    message = 'הדפדפן לא תומך בפורמט הסרטון הנוכחי.';
+                    break;
+                case 100:
+                case 101:
+                case 150:
+                    message = 'הסרטון מוגבל לצפייה בתוך YouTube בלבד.';
+                    break;
+            }
+
+            currentSongLabel.textContent = message + ' מדלג לשיר הבא...';
+
+            if (player && player.nextVideo && hasUserInteracted) {
+                setTimeout(() => {
+                    try {
+                        player.nextVideo();
+                    } catch (err) {
+                        console.error('ניסיון מעבר לשיר הבא נכשל:', err);
+                    }
+                }, 1500);
+            }
+        }
+        
+        // בדיקה מחזורית של שם השיר הנוכחי
+        setInterval(updateCurrentSong, 2000);
+        
+        // הפעלת מניעת כיבוי מסך בטעינת הדף
+        window.addEventListener('load', preventScreenSleep);
+        
+        // שליטה בעוצמת השמע
+        document.getElementById('volumeSlider').addEventListener('input', function() {
+            if (player && player.setVolume) {
+                const volume = this.value;
+                player.setVolume(volume);
+                updateVolumeIcon(volume);
+                lastVolume = volume;
+            }
+        });
+        
+        // עדכון אייקון העוצמה לפי ערך העוצמה
+        function updateVolumeIcon(volume) {
+            const volumeIcon = document.getElementById('volumeIcon');
+            if (volume == 0) {
+                volumeIcon.textContent = '🔇'; // מושתק
+            } else if (volume < 50) {
+                volumeIcon.textContent = '🔉'; // עוצמה נמוכה
+            } else {
+                volumeIcon.textContent = '🔊'; // עוצמה גבוהה
+            }
+        }
+        
+        // פונקציה להשתקה והפעלה מחדש של השמע
+        function toggleMute() {
+            if (player && player.isMuted) {
+                const volumeSlider = document.getElementById('volumeSlider');
+                if (player.isMuted()) {
+                    player.unMute();
+                    volumeSlider.value = lastVolume;
+                    updateVolumeIcon(lastVolume);
+                } else {
+                    player.mute();
+                    updateVolumeIcon(0);
+                }
+            }
+        }
+        
+        // תמיכה בהתקנת PWA 
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // מניעת הצגת החלון האוטומטי
+            e.preventDefault();
+            // שמירת האירוע כדי שנוכל להפעיל אותו מאוחר יותר
+            deferredPrompt = e;
+            
+            // יצירת חלון מותאם עם הודעה להתקנה
+            const installPrompt = document.createElement('div');
+            installPrompt.className = 'install-prompt';
+            installPrompt.innerHTML = `
+                <p>רוצה להתקין את נגן המוזיקה לרכב ישירות למסך הבית?</p>
+                <button id="installBtn">התקן עכשיו</button>
+            `;
+            document.body.appendChild(installPrompt);
+            
+            // הצגת החלון לאחר שנייה
+            setTimeout(() => {
+                installPrompt.style.display = 'block';
+            }, 1000);
+            
+            // הוספת מאזין אירועים לכפתור ההתקנה
+            document.getElementById('installBtn').addEventListener('click', async () => {
+                // הסתרת החלון
+                installPrompt.style.display = 'none';
+                
+                // הצגת חלון ההתקנה
+                deferredPrompt.prompt();
+                
+                // בדיקה אם המשתמש אישר את ההתקנה
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                // איפוס deferredPrompt כי ניתן להשתמש בו רק פעם אחת
+                deferredPrompt = null;
+            });
+        });
+        
+        // אם האפליקציה כבר מותקנת
+        window.addEventListener('appinstalled', () => {
+            // הסתרת הכפתור אם הוא עדיין מוצג
+            const installPrompt = document.querySelector('.install-prompt');
+            if (installPrompt) {
+                installPrompt.style.display = 'none';
+            }
+            deferredPrompt = null;
+        });
+        
+        // קיצורי מקלדת למחשב
+        document.addEventListener('keydown', function(event) {
+            // אם המשתמש מקליד בשדה טקסט, לא להפעיל קיצורים
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            switch(event.key) {
+                case ' ': // רווח - הפעלה/השהייה
+                    if (player && player.getPlayerState) {
+                        if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+                            pauseVideo();
+                        } else {
+                            playVideo();
+                        }
+                    }
+                    event.preventDefault();
+                    break;
+                case 'ArrowRight': // חץ ימינה - שיר הבא
+                    nextTrack();
+                    event.preventDefault();
+                    break;
+                case 'ArrowLeft': // חץ שמאלה - שיר קודם
+                    previousTrack();
+                    event.preventDefault();
+                    break;
+                case 's': // ערבוב
+                case 'S':
+                    toggleShuffle();
+                    event.preventDefault();
+                    break;
+                case 'p': // פלייליסט הבא
+                case 'P':
+                    nextPlaylist();
+                    event.preventDefault();
+                    break;
+                case 'm': // השתקה
+                case 'M':
+                    toggleMute();
+                    event.preventDefault();
+                    break;
+                case 'd': // מצב יום/לילה
+                case 'D':
+                    toggleDayNightMode();
+                    event.preventDefault();
+                    break;
+                case '+': // הגברת עוצמה
+                case '=':
+                    if (player && player.getVolume) {
+                        const currentVolume = player.getVolume();
+                        const newVolume = Math.min(100, currentVolume + 10);
+                        player.setVolume(newVolume);
+                        document.getElementById('volumeSlider').value = newVolume;
+                        updateVolumeIcon(newVolume);
+                    }
+                    event.preventDefault();
+                    break;
+                case '-': // הנמכת עוצמה
+                case '_':
+                    if (player && player.getVolume) {
+                        const currentVolume = player.getVolume();
+                        const newVolume = Math.max(0, currentVolume - 10);
+                        player.setVolume(newVolume);
+                        document.getElementById('volumeSlider').value = newVolume;
+                        updateVolumeIcon(newVolume);
+                    }
+                    event.preventDefault();
+                    break;
+            }
+        });
+        
+        // הצגת והסתרת קיצורי מקלדת בהתאם לסוג המכשיר
+        function checkDeviceType() {
+            // פונקציה משומרת אך לא עושה כלום כרגע כיוון שהסרנו את קיצורי המקלדת
+            // מושארת לשימוש עתידי
+        }
+        
+        // בדיקת סוג המכשיר בטעינה
+        window.addEventListener('load', checkDeviceType);
+        
+        // בדיקת טעינת הדף ומצב הנגן
+        window.addEventListener('load', function() {
+            console.log('הדף נטען בהצלחה');
+            
+            // בדיקה שכל האלמנטים מוצגים
+            setTimeout(function() {
+                // וידוא שכל האלמנטים מוצגים בצורה תקינה
+                document.getElementById('currentSongContainer').style.display = 'block';
+                document.getElementById('volumeControl').style.display = 'flex';
+                document.querySelectorAll('.control-buttons').forEach(el => el.style.display = 'flex');
+                document.getElementById('playlistName').style.display = 'block';
+                
+                // מנגנון בדיקה ותיקון אם הנגן לא נטען כראוי
+                if (!player || (player && typeof player.getPlayerState !== 'function')) {
+                    console.log('נגן YouTube לא נטען כראוי, מנסה לטעון מחדש...');
+                    // ניסיון לטעון מחדש את הנגן בצורה ישירה ופשוטה
+                    document.getElementById('player').innerHTML = '<iframe width="100%" height="350" src="https://www.youtube.com/embed/videoseries?list=' + 
+                        playlists[currentPlaylistIndex].id + 
+                        '&autoplay=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+                }
+            }, 1000); // בדיקה לאחר שנייה אחת
+        });
+    </script>
+
+</body>
+</html>
