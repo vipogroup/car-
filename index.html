@@ -568,11 +568,22 @@
         let consecutiveAdChecks = 0; // מספר בדיקות רציפות שזיהו פרסומת
 
         // טעינת פלייליסטים מ-LocalStorage או ברירת מחדל
-        let playlists = JSON.parse(localStorage.getItem('musicPlaylists')) || [
+        const defaultPlaylists = [
             { name: "🎵 פלייליסט ראשי - נהיגה בכיף 🚗", id: "PLWkfrFkdyL1Fdaso2jWg1gevOxRe2jKvG" },
             { name: "🎸 רוק ישראלי 🇮🇱", id: "PLWkfrFkdyL1Fdaso2jWg1gevOxRe2jKvG" },
             { name: "🎤 מזרחית מושלמת 💃", id: "PLWkfrFkdyL1Fdaso2jWg1gevOxRe2jKvG" }
         ];
+        
+        let playlists = JSON.parse(localStorage.getItem('musicPlaylists')) || defaultPlaylists;
+        
+        // אם יש רק פלייליסט אחד, החזר לברירת מחדל
+        if (playlists.length === 1) {
+            console.log('⚠️ נמצא רק פלייליסט אחד - מחזיר לברירת מחדל');
+            playlists = defaultPlaylists;
+            localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
+        }
+        
+        console.log(`🎵 נטענו ${playlists.length} פלייליסטים:`, playlists.map(p => p.name));
         
         // שמירת פלייליסטים ב-LocalStorage
         function savePlaylists() {
@@ -585,12 +596,17 @@
             const prevBtn = document.getElementById('prevPlaylistBtn');
             const nextBtn = document.getElementById('nextPlaylistBtn');
             
+            console.log(`📋 מספר פלייליסטים: ${playlists.length}`);
+            console.log('📋 רשימת פלייליסטים:', playlists.map(p => p.name).join(', '));
+            
             if (playlists.length > 1) {
-                prevBtn.style.display = 'inline-block';
-                nextBtn.style.display = 'inline-block';
+                if (prevBtn) prevBtn.style.display = 'inline-block';
+                if (nextBtn) nextBtn.style.display = 'inline-block';
+                console.log('✅ כפתורי ניווט מוצגים');
             } else {
-                prevBtn.style.display = 'none';
-                nextBtn.style.display = 'none';
+                if (prevBtn) prevBtn.style.display = 'none';
+                if (nextBtn) nextBtn.style.display = 'none';
+                console.log('⚠️ כפתורי ניווט מוסתרים - יש רק פלייליסט אחד');
             }
         }
 
@@ -807,9 +823,15 @@
         }
 
         function nextPlaylist() {
+            const oldIndex = currentPlaylistIndex;
             currentPlaylistIndex = (currentPlaylistIndex + 1) % playlists.length;
-            console.log(`מעבר לפלייליסט הבא: ${playlists[currentPlaylistIndex].name}`);
+            console.log(`⏭️ מעבר מפלייליסט ${oldIndex} (${playlists[oldIndex].name}) לפלייליסט ${currentPlaylistIndex} (${playlists[currentPlaylistIndex].name})`);
             hasUserInteracted = true;
+            
+            // עדכן את שם הפלייליסט מיד
+            updatePlaylistName();
+            
+            // טען את הנגן מחדש
             reloadPlayer();
             
             // הוספת אפקט ויזואלי כדי שהמשתמש ידע שהפעולה התקבלה
@@ -821,9 +843,15 @@
         }
 
         function previousPlaylist() {
+            const oldIndex = currentPlaylistIndex;
             currentPlaylistIndex = (currentPlaylistIndex - 1 + playlists.length) % playlists.length;
-            console.log(`מעבר לפלייליסט הקודם: ${playlists[currentPlaylistIndex].name}`);
+            console.log(`⏮️ מעבר מפלייליסט ${oldIndex} (${playlists[oldIndex].name}) לפלייליסט ${currentPlaylistIndex} (${playlists[currentPlaylistIndex].name})`);
             hasUserInteracted = true;
+            
+            // עדכן את שם הפלייליסט מיד
+            updatePlaylistName();
+            
+            // טען את הנגן מחדש
             reloadPlayer();
             
             // הוספת אפקט ויזואלי כדי שהמשתמש ידע שהפעולה התקבלה
