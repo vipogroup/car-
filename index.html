@@ -1215,6 +1215,122 @@
             }
             deferredPrompt = null;
         });
+
+        // מנגנון שמירה על האפליקציה פעילה ברקע
+        function keepAppAlive() {
+            // 1. מניעת השהיה/סגירה של הדף
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    console.log('📱 האפליקציה עברה לרקע - שומר על פעילות');
+                    // המשך ניגון גם ברקע
+                    if (player && player.getPlayerState && player.getPlayerState() === 1) {
+                        console.log('🎵 ממשיך לנגן ברקע');
+                    }
+                } else {
+                    console.log('📱 האפליקציה חזרה לחזית');
+                }
+            });
+
+            // 2. מניעת unload/beforeunload
+            window.addEventListener('beforeunload', (e) => {
+                // מונע סגירה מקרית
+                if (player && player.getPlayerState && player.getPlayerState() === 1) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                    return '';
+                }
+            });
+
+            // 3. שמירה על חיבור פעיל - heartbeat
+            let heartbeatInterval = setInterval(() => {
+                if (document.hidden && player && player.getPlayerState) {
+                    // שליחת "דופק" כדי לשמור על האפליקציה חיה
+                    try {
+                        const state = player.getPlayerState();
+                        console.log('💓 Heartbeat - מצב נגן:', state);
+                    } catch (e) {
+                        // שקט
+                    }
+                }
+            }, 5000); // כל 5 שניות
+
+            // 4. מניעת sleep mode
+            if ('wakeLock' in navigator) {
+                let wakeLock = null;
+                const requestWakeLock = async () => {
+                    try {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        console.log('🔒 Wake Lock פעיל - מונע כיבוי');
+                        
+                        wakeLock.addEventListener('release', () => {
+                            console.log('🔓 Wake Lock שוחרר - מנסה שוב');
+                            setTimeout(requestWakeLock, 1000);
+                        });
+                    } catch (err) {
+                        console.log('⚠️ Wake Lock נכשל, מנסה שוב בעוד 5 שניות');
+                        setTimeout(requestWakeLock, 5000);
+                    }
+                };
+                
+                // הפעלה ראשונית
+                requestWakeLock();
+                
+                // הפעלה מחדש כשחוזרים מרקע
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && wakeLock === null) {
+                        requestWakeLock();
+                    }
+                });
+            }
+
+            // 5. שמירה על Audio Context פעיל (חשוב לניגון ברקע)
+            if ('AudioContext' in window || 'webkitAudioContext' in window) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioContext = new AudioContext();
+                
+                // שמירה על ה-context פעיל
+                setInterval(() => {
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(() => {
+                            console.log('🔊 Audio Context חודש');
+                        });
+                    }
+                }, 3000);
+            }
+
+            // 6. מניעת "freeze" ב-iOS
+            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                // iOS דורש פעילות קבועה
+                setInterval(() => {
+                    if (document.hidden) {
+                        // פעולה קטנה שמונעת freeze
+                        const dummy = new Date().getTime();
+                    }
+                }, 1000);
+            }
+
+            // 7. שמירה על Service Worker פעיל (אם קיים)
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    console.log('✅ Service Worker מוכן לעבודה ברקע');
+                    
+                    // שליחת הודעות תקופתיות ל-Service Worker
+                    setInterval(() => {
+                        if (registration.active) {
+                            registration.active.postMessage({
+                                type: 'KEEP_ALIVE',
+                                timestamp: Date.now()
+                            });
+                        }
+                    }, 10000);
+                });
+            }
+
+            console.log('🛡️ מנגנוני שמירה על פעילות ברקע הופעלו');
+        }
+
+        // הפעלת מנגנוני שמירה על פעילות
+        window.addEventListener('load', keepAppAlive);
         
         // קיצורי מקלדת למחשב
         document.addEventListener('keydown', function(event) {
@@ -1296,6 +1412,24 @@
         // בדיקת סוג המכשיר בטעינה
         window.addEventListener('load', checkDeviceType);
         
+        // רישום Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker נרשם בהצלחה:', registration.scope);
+                        
+                        // בדיקה אם יש עדכון
+                        registration.addEventListener('updatefound', () => {
+                            console.log('🔄 נמצא עדכון ל-Service Worker');
+                        });
+                    })
+                    .catch(error => {
+                        console.error('❌ רישום Service Worker נכשל:', error);
+                    });
+            });
+        }
+
         // בדיקת טעינת הדף ומצב הנגן
         window.addEventListener('load', function() {
             console.log('הדף נטען בהצלחה');
