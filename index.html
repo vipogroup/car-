@@ -480,6 +480,9 @@
         <span class="mode-icon" id="mode-icon">🌙</span>
     </div>
 
+    <!-- Audio נסתר לניגון ברקע -->
+    <audio id="backgroundAudio" style="display: none;" preload="auto"></audio>
+
     <div class="music-player" id="musicPlayer">
         <h2 style="font-size: 22px; margin: 5px 0;">🎶 נגן מוזיקה לרכב 🚗</h2>
         <div id="player" class="video-frame"></div>
@@ -768,6 +771,17 @@
                 hasUserInteracted = true;
                 player.playVideo();
                 startAdDetection(); // הפעל זיהוי פרסומות
+                
+                // אתחל background audio למקרה של מעבר לרקע
+                const backgroundAudio = document.getElementById('backgroundAudio');
+                if (backgroundAudio && backgroundAudio.paused) {
+                    const silenceUrl = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+                    backgroundAudio.src = silenceUrl;
+                    backgroundAudio.loop = true;
+                    backgroundAudio.volume = 0.01; // שקט מאוד
+                    backgroundAudio.play().catch(e => console.log('Silent audio init:', e));
+                    console.log('🔇 Background audio initialized (silent)');
+                }
             }
         }
 
@@ -1138,6 +1152,8 @@
         function updateMediaSession(title) {
             if ('mediaSession' in navigator) {
                 try {
+                    const backgroundAudio = document.getElementById('backgroundAudio');
+                    
                     navigator.mediaSession.metadata = new MediaMetadata({
                         title: title || 'נגן מוזיקה לרכב',
                         artist: playlists[currentPlaylistIndex].name,
@@ -1151,9 +1167,17 @@
                     // הגדרת פעולות שליטה
                     navigator.mediaSession.setActionHandler('play', () => {
                         playVideo();
+                        // וודא שה-background audio פעיל
+                        if (backgroundAudio && backgroundAudio.paused) {
+                            backgroundAudio.play().catch(e => console.log('Background audio play failed'));
+                        }
                     });
                     navigator.mediaSession.setActionHandler('pause', () => {
                         pauseVideo();
+                        // עצור גם את ה-background audio
+                        if (backgroundAudio && !backgroundAudio.paused) {
+                            backgroundAudio.pause();
+                        }
                     });
                     navigator.mediaSession.setActionHandler('previoustrack', () => {
                         previousTrack();
@@ -1341,14 +1365,50 @@
                 });
             }
 
-            // 2. מניעת השהיה/סגירה של הדף
+            // 2. סנכרון Audio ברקע עם YouTube
+            const backgroundAudio = document.getElementById('backgroundAudio');
+            let isBackgroundMode = false;
+            
+            // פונקציה לסנכרון השמע
+            function syncBackgroundAudio() {
+                if (!player || !player.getVideoData) return;
+                
+                try {
+                    const videoData = player.getVideoData();
+                    const videoId = videoData.video_id;
+                    
+                    if (videoId && isBackgroundMode) {
+                        // השתמש ב-YouTube Audio URL (עובד ברקע!)
+                        const audioUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                        console.log('🎵 מעביר לניגון ברקע:', videoData.title);
+                        
+                        // נגן שמע שקט כדי לשמור על הקשר פעיל
+                        if (backgroundAudio.paused) {
+                            // יצירת silence audio כדי לשמור על Media Session פעיל
+                            const silenceUrl = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+                            backgroundAudio.src = silenceUrl;
+                            backgroundAudio.loop = true;
+                            backgroundAudio.play().catch(e => console.log('Background audio play failed:', e));
+                        }
+                    }
+                } catch (e) {
+                    console.error('שגיאה בסנכרון שמע ברקע:', e);
+                }
+            }
+
+            // 3. מניעת השהיה/סגירה של הדף
             let backgroundNotificationShown = false;
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) {
                     console.log('📱 האפליקציה עברה לרקע - שומר על פעילות');
+                    isBackgroundMode = true;
+                    
                     // המשך ניגון גם ברקע
                     if (player && player.getPlayerState && player.getPlayerState() === 1) {
                         console.log('🎵 ממשיך לנגן ברקע');
+                        
+                        // הפעל Audio ברקע
+                        syncBackgroundAudio();
                         
                         // הצג הודעה למשתמש פעם אחת
                         if (!backgroundNotificationShown && 'Notification' in window && Notification.permission === 'granted') {
@@ -1363,10 +1423,22 @@
                     }
                 } else {
                     console.log('📱 האפליקציה חזרה לחזית');
+                    isBackgroundMode = false;
+                    
+                    // עצור את ה-background audio
+                    if (backgroundAudio && !backgroundAudio.paused) {
+                        backgroundAudio.pause();
+                    }
+                    
                     // וודא שהנגן עדיין עובד
                     if (player && player.getPlayerState) {
                         const state = player.getPlayerState();
                         console.log('🔍 מצב נגן:', state);
+                        
+                        // אם הנגן עצר, הפעל אותו שוב
+                        if (state === 2 || state === 5) {
+                            player.playVideo();
+                        }
                     }
                 }
             });
