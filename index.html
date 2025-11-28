@@ -1220,16 +1220,51 @@
 
         // מנגנון שמירה על האפליקציה פעילה ברקע
         function keepAppAlive() {
-            // 1. מניעת השהיה/סגירה של הדף
+            // 1. Page Lifecycle API - מניעת freeze/discard באנדרואיד
+            if ('onfreeze' in document) {
+                document.addEventListener('freeze', (e) => {
+                    console.log('❄️ אנדרואיד מנסה להקפיא - מונע!');
+                    e.preventDefault();
+                });
+            }
+            
+            if ('onresume' in document) {
+                document.addEventListener('resume', () => {
+                    console.log('♻️ האפליקציה חודשה');
+                    // וודא שהנגן עדיין פעיל
+                    if (player && player.getPlayerState && player.getPlayerState() === 2) {
+                        player.playVideo();
+                    }
+                });
+            }
+
+            // 2. מניעת השהיה/סגירה של הדף
+            let backgroundNotificationShown = false;
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) {
                     console.log('📱 האפליקציה עברה לרקע - שומר על פעילות');
                     // המשך ניגון גם ברקע
                     if (player && player.getPlayerState && player.getPlayerState() === 1) {
                         console.log('🎵 ממשיך לנגן ברקע');
+                        
+                        // הצג הודעה למשתמש פעם אחת
+                        if (!backgroundNotificationShown && 'Notification' in window && Notification.permission === 'granted') {
+                            new Notification('🎵 נגן מוזיקה לרכב', {
+                                body: 'המוזיקה ממשיכה לנגן ברקע 🚗',
+                                icon: 'car-music-icon.png',
+                                tag: 'background-music',
+                                requireInteraction: false
+                            });
+                            backgroundNotificationShown = true;
+                        }
                     }
                 } else {
                     console.log('📱 האפליקציה חזרה לחזית');
+                    // וודא שהנגן עדיין עובד
+                    if (player && player.getPlayerState) {
+                        const state = player.getPlayerState();
+                        console.log('🔍 מצב נגן:', state);
+                    }
                 }
             });
 
@@ -1326,6 +1361,23 @@
                         }
                     }, 10000);
                 });
+            }
+
+            // 8. בקשת הרשאות להתראות (לאחר אינטראקציה ראשונה)
+            if ('Notification' in window && Notification.permission === 'default') {
+                // נבקש הרשאה רק אחרי שהמשתמש לחץ play
+                const requestNotificationPermission = () => {
+                    if (hasUserInteracted) {
+                        Notification.requestPermission().then(permission => {
+                            if (permission === 'granted') {
+                                console.log('✅ הרשאות התראות ניתנו');
+                            }
+                        });
+                        // הסר את המאזין אחרי בקשה אחת
+                        document.removeEventListener('click', requestNotificationPermission);
+                    }
+                };
+                document.addEventListener('click', requestNotificationPermission);
             }
 
             console.log('🛡️ מנגנוני שמירה על פעילות ברקע הופעלו');

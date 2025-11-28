@@ -5,6 +5,7 @@
   "start_url": "index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "background_color": "#203a43",
   "theme_color": "#1db954",
   "categories": ["music", "entertainment"],
@@ -25,5 +26,13 @@
   "orientation": "any",
   "dir": "rtl",
   "lang": "he",
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "share_target": {
+    "action": "index.html",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded"
+  }
 }
