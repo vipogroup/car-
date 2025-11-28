@@ -1269,8 +1269,18 @@
                     navigator.mediaSession.setActionHandler('nexttrack', () => {
                         nextTrack();
                     });
+                    
+                    // כפתורים נוספים למעבר בין פלייליסטים
+                    navigator.mediaSession.setActionHandler('seekbackward', () => {
+                        console.log('⏪ פלייליסט קודם (מ-Media Session)');
+                        previousPlaylist();
+                    });
+                    navigator.mediaSession.setActionHandler('seekforward', () => {
+                        console.log('⏩ פלייליסט הבא (מ-Media Session)');
+                        nextPlaylist();
+                    });
 
-                    console.log('✅ Media Session API מופעל - ניתן לשלוט מהרקע');
+                    console.log('✅ Media Session API מופעל - 5 כפתורים זמינים (שירים + פלייליסטים)');
                 } catch (e) {
                     console.warn('Media Session API לא נתמך:', e);
                 }
