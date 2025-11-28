@@ -9,11 +9,14 @@
     <!-- מניעת כיבוי מסך -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <!-- הגדרות PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1db954">
     <link rel="apple-touch-icon" href="car-music-icon.png">
     <link rel="icon" type="image/png" href="car-music-icon.png">
+    <!-- אפשר ניגון ברקע -->
+    <meta name="mobile-web-app-background-audio" content="yes">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -1026,6 +1029,41 @@
             }
         }
 
+        // עדכון Media Session API לניגון ברקע
+        function updateMediaSession(title) {
+            if ('mediaSession' in navigator) {
+                try {
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: title || 'נגן מוזיקה לרכב',
+                        artist: playlists[currentPlaylistIndex].name,
+                        album: '🎶 נגן שירים לרכב 🚗',
+                        artwork: [
+                            { src: 'car-music-icon.png', sizes: '192x192', type: 'image/png' },
+                            { src: 'car-music-icon.png', sizes: '512x512', type: 'image/png' }
+                        ]
+                    });
+
+                    // הגדרת פעולות שליטה
+                    navigator.mediaSession.setActionHandler('play', () => {
+                        playVideo();
+                    });
+                    navigator.mediaSession.setActionHandler('pause', () => {
+                        pauseVideo();
+                    });
+                    navigator.mediaSession.setActionHandler('previoustrack', () => {
+                        previousTrack();
+                    });
+                    navigator.mediaSession.setActionHandler('nexttrack', () => {
+                        nextTrack();
+                    });
+
+                    console.log('✅ Media Session API מופעל - ניתן לשלוט מהרקע');
+                } catch (e) {
+                    console.warn('Media Session API לא נתמך:', e);
+                }
+            }
+        }
+
         // עדכון שם השיר הנוכחי
         function updateCurrentSong() {
             if (player && player.getVideoData) {
@@ -1033,7 +1071,13 @@
                     const videoData = player.getVideoData();
                     if (videoData && videoData.title) {
                         const adIndicator = isAdPlaying ? ' 🚫 [מדלג על פרסומת...]' : '';
-                        document.getElementById('currentSong').textContent = videoData.title + adIndicator;
+                        const title = videoData.title;
+                        document.getElementById('currentSong').textContent = title + adIndicator;
+                        
+                        // עדכון Media Session
+                        if (!isAdPlaying) {
+                            updateMediaSession(title);
+                        }
                     } else if (hasUserInteracted) {
                         document.getElementById('currentSong').textContent = 'לא ניתן לקבל מידע על השיר';
                     }

@@ -3,22 +3,27 @@
   "short_name": "נגן לרכב",
   "description": "נגן מוזיקה נוח לשימוש ברכב עם פלייליסטים מותאמים",
   "start_url": "index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#203a43",
   "theme_color": "#1db954",
+  "categories": ["music", "entertainment"],
   "icons": [
     {
       "src": "car-music-icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "car-music-icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "orientation": "any",
   "dir": "rtl",
-  "lang": "he"
+  "lang": "he",
+  "prefer_related_applications": false
 }
