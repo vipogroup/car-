@@ -375,6 +375,35 @@
             }
         }
 
+        /* כפתור סגירה לחלון התקנה */
+        .close-prompt {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .close-prompt:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .close-prompt:active {
+            transform: scale(0.95);
+        }
+
     </style>
 </head>
 <body>
@@ -464,6 +493,8 @@
         let adDetectionInterval = null; // מזהה זיהוי פרסומות
         let isAdPlaying = false; // האם מתנגנת פרסומת כרגע
         let lastKnownDuration = 0; // משך הסרטון האחרון שנשמר
+        let lastVideoUrl = ''; // URL הסרטון האחרון
+        let consecutiveAdChecks = 0; // מספר בדיקות רציפות שזיהו פרסומת
 
         // טעינת פלייליסטים מ-LocalStorage או ברירת מחדל
         let playlists = JSON.parse(localStorage.getItem('musicPlaylists')) || [
@@ -880,24 +911,56 @@
             }, 30000);
         }
         
-        // זיהוי ודילוג על פרסומות
+        // זיהוי ודילוג על פרץומות - אלגוריתם משופר
         function detectAndSkipAds() {
-            if (!player || !player.getDuration || !player.getCurrentTime) return;
+            if (!player || !player.getDuration || !player.getCurrentTime || !player.getVideoUrl) return;
             
             try {
                 const duration = player.getDuration();
                 const currentTime = player.getCurrentTime();
                 const playerState = player.getPlayerState();
+                const currentUrl = player.getVideoUrl();
+                const videoData = player.getVideoData();
                 
-                // זיהוי פרסומת: משך קצר מאוד (פחות מ-60 שניות) או שינוי פתאומי במשך
-                const isPossibleAd = (
-                    (duration > 0 && duration < 60) || // פרסומות בדרך כלל קצרות
-                    (lastKnownDuration > 0 && Math.abs(duration - lastKnownDuration) > 30) // שינוי פתאומי במשך
-                );
+                // אסטרטגיות זיהוי משולבות:
+                let adIndicators = 0;
                 
-                if (isPossibleAd && playerState === 1) { // 1 = מנגן
-                    if (!isAdPlaying) {
-                        console.log('🚫 זוהתה פרסומת - מפעיל השתקה ודילוג מהיר');
+                // 1. בדיקת משך קצר (פרסומות בדרך כלל 6-30 שניות)
+                if (duration > 0 && duration >= 5 && duration <= 90) {
+                    adIndicators++;
+                }
+                
+                // 2. שינוי פתאומי ב-URL או במשך
+                if (lastVideoUrl && currentUrl !== lastVideoUrl) {
+                    adIndicators++;
+                }
+                if (lastKnownDuration > 0 && Math.abs(duration - lastKnownDuration) > 20) {
+                    adIndicators++;
+                }
+                
+                // 3. בדיקת שם הסרטון (פרסומות לעיתים קרובות יש מילים מסוימות)
+                if (videoData && videoData.title) {
+                    const title = videoData.title.toLowerCase();
+                    const adKeywords = ['ad', 'advertisement', 'sponsor', 'פרסומת', 'מועצר'];
+                    if (adKeywords.some(keyword => title.includes(keyword))) {
+                        adIndicators += 2; // משקל גבוה יותר
+                    }
+                }
+                
+                // 4. בדיקת התנהגות משונה - אם הסרטון מתנגן אבל לא ניתן לדלג
+                const timeRemaining = duration - currentTime;
+                if (timeRemaining > 0 && timeRemaining < 30 && duration < 60) {
+                    adIndicators++;
+                }
+                
+                // החלטה: אם יש 2+ אינדיקטורים, זו כנראה פרסומת
+                const isPossibleAd = adIndicators >= 2 && playerState === 1;
+                
+                if (isPossibleAd) {
+                    consecutiveAdChecks++;
+                    
+                    if (!isAdPlaying && consecutiveAdChecks >= 2) {
+                        console.log(`🚫 זוהתה פרסומת! (אינדיקטורים: ${adIndicators}) - משתיק ומדלג`);
                         isAdPlaying = true;
                         
                         // השתקת שמע
@@ -905,15 +968,23 @@
                             lastVolume = player.getVolume();
                             player.mute();
                         }
-                        
-                        // דילוג מהיר קדימה
-                        const skipTo = Math.min(currentTime + 5, duration - 1);
-                        if (skipTo > currentTime) {
-                            player.seekTo(skipTo, true);
+                    }
+                    
+                    // דילוג אגרסיבי - קפיצה לסוף הפרסומת
+                    if (isAdPlaying && currentTime < duration - 2) {
+                        const skipTo = Math.min(duration - 0.5, currentTime + 10);
+                        player.seekTo(skipTo, true);
+                    } else if (isAdPlaying && currentTime >= duration - 2) {
+                        // קרוב לסוף - נסה לעבור לשיר הבא
+                        console.log('⏭️ מעביר לשיר הבא...');
+                        if (player.nextVideo) {
+                            player.nextVideo();
                         }
                     }
                 } else {
-                    // לא פרסומת - החזר שמע רגיל
+                    // לא פרסומת - איפוס והחזרת שמע
+                    consecutiveAdChecks = 0;
+                    
                     if (isAdPlaying) {
                         console.log('✅ פרסומת הסתיימה - מחזיר שמע רגיל');
                         isAdPlaying = false;
@@ -923,8 +994,15 @@
                             player.setVolume(lastVolume);
                         }
                     }
-                    lastKnownDuration = duration;
+                    
+                    // עדכון נתונים אחרונים
+                    if (duration > 60) { // רק שירים אמיתיים
+                        lastKnownDuration = duration;
+                    }
                 }
+                
+                lastVideoUrl = currentUrl;
+                
             } catch (e) {
                 console.error('שגיאה בזיהוי פרסומות:', e);
             }
@@ -935,8 +1013,8 @@
             if (adDetectionInterval) {
                 clearInterval(adDetectionInterval);
             }
-            // בדיקה כל 500 מילישניות
-            adDetectionInterval = setInterval(detectAndSkipAds, 500);
+            // בדיקה כל 300 מילישניות (מהיר יותר)
+            adDetectionInterval = setInterval(detectAndSkipAds, 300);
             console.log('🛡️ מערכת זיהוי פרסומות הופעלה');
         }
         
@@ -1052,6 +1130,7 @@
             const installPrompt = document.createElement('div');
             installPrompt.className = 'install-prompt';
             installPrompt.innerHTML = `
+                <button class="close-prompt" id="closePromptBtn">✖️</button>
                 <p>רוצה להתקין את נגן המוזיקה לרכב ישירות למסך הבית?</p>
                 <button id="installBtn">התקן עכשיו</button>
             `;
@@ -1061,6 +1140,11 @@
             setTimeout(() => {
                 installPrompt.style.display = 'block';
             }, 1000);
+            
+            // הוספת מאזין אירועים לכפתור הסגירה
+            document.getElementById('closePromptBtn').addEventListener('click', () => {
+                installPrompt.style.display = 'none';
+            });
             
             // הוספת מאזין אירועים לכפתור ההתקנה
             document.getElementById('installBtn').addEventListener('click', async () => {
