@@ -18,106 +18,54 @@
     <!-- אפשר ניגון ברקע -->
     <meta name="mobile-web-app-background-audio" content="yes">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: Arial, sans-serif;
             text-align: center;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0f0f1e 100%);
+            background: #222;
             color: white;
             margin: 0;
-            padding: 0;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             height: 100vh;
-            width: 100vw;
-            font-size: 14px;
+            font-size: 16px;
             overflow: hidden;
             position: fixed;
+            width: 100%;
             top: 0;
             left: 0;
-        }
-        
-        /* אפקט רקע מוזר */
-        body::before {
-            content: '';
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(29,185,84,0.1) 0%, transparent 70%);
-            animation: pulse 15s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 0;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.3; }
-            50% { transform: scale(1.1) rotate(180deg); opacity: 0.5; }
+            box-sizing: border-box;
         }
 
         .music-player {
-            width: 100vw;
-            height: 100vh;
-            max-width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            width: 100%;
+            max-width: 500px;
+            background: #333;
             padding: 10px;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
+            border-radius: 15px;
+            border: 2px solid #1db954;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            gap: 8px;
+            align-items: center;
+            max-height: 100vh;
+            overflow: visible;
             position: relative;
             z-index: 1;
-            animation: fadeInUp 0.6s ease-out;
-            overflow: hidden;
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            gap: 10px;
         }
 
         .video-frame {
             width: 100%;
-            height: 35vh;
-            flex-shrink: 0;
-            border-radius: 16px;
-            border: 1px solid rgba(29, 185, 84, 0.3);
+            height: 25vh;
+            min-height: 180px;
+            max-height: 200px;
+            border-radius: 10px;
+            border: 2px solid #1db954;
             overflow: hidden;
-            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-            box-shadow: 
-                0 10px 40px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                0 0 30px rgba(29, 185, 84, 0.15);
-            position: relative;
-            transition: all 0.3s ease;
-        }
-        
-        .video-frame:hover {
-            transform: translateY(-2px);
-            box-shadow: 
-                0 15px 50px rgba(0, 0, 0, 0.6),
-                0 0 40px rgba(29, 185, 84, 0.25);
+            background-color: #000;
+            margin-bottom: 5px;
         }
         
         .video-frame iframe {
@@ -129,65 +77,29 @@
         .control-buttons {
             display: flex !important;
             justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin: 0;
+            gap: 5px;
+            margin: 5px 0;
             width: 100%;
             flex-wrap: wrap;
-            flex-shrink: 0;
         }
 
         .control-btn {
-            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+            background: #1db954;
             color: white;
             border: none;
-            padding: 10px;
-            border-radius: 12px;
+            padding: 8px;
+            border-radius: 10px;
             font-size: 18px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            min-width: 56px;
-            min-height: 56px;
-            margin: 4px;
-            box-shadow: 
-                0 4px 15px rgba(29, 185, 84, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            position: relative;
-            overflow: hidden;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-        
-        .control-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        .control-btn:hover::before {
-            width: 300px;
-            height: 300px;
+            transition: 0.2s;
+            min-width: 40px;
+            min-height: 40px;
+            margin: 2px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .control-btn:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 
-                0 8px 25px rgba(29, 185, 84, 0.6),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        }
-        
-        .control-btn:active {
-            transform: translateY(-1px) scale(0.98);
-            box-shadow: 
-                0 3px 10px rgba(29, 185, 84, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            background: #17a450;
         }
 
         .shuffle-btn.active {
@@ -196,62 +108,30 @@
         }
 
         .playlist-name {
-            margin: 0;
+            margin: 5px 0;
             font-size: 1.2em;
-            background: linear-gradient(135deg, #1db954 0%, #1ed760 50%, #00ff88 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 700;
-            padding: 8px 10px;
+            color: #1db954;
+            font-weight: bold;
+            padding: 5px;
             display: block !important;
-            text-align: center;
             visibility: visible !important;
             width: 100%;
-            text-shadow: 0 0 30px rgba(29, 185, 84, 0.5);
-            letter-spacing: 0.5px;
-            animation: shimmer 3s ease-in-out infinite;
-            flex-shrink: 0;
-        }
-        
-        @keyframes shimmer {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.2); }
         }
 
         .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: linear-gradient(135deg, #ff3333 0%, #ff5555 100%);
-            padding: 10px 20px;
-            border-radius: 12px;
+            background: #ff3333;
+            padding: 8px 12px;
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            box-shadow: 
-                0 4px 15px rgba(255, 51, 51, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            margin-top: 5px;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             border: none;
             color: white;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            letter-spacing: 0.5px;
-            z-index: 100;
         }
 
         .back-btn:hover {
-            background: linear-gradient(135deg, #ff5555 0%, #ff7777 100%);
-            transform: translateY(-2px);
-            box-shadow: 
-                0 6px 20px rgba(255, 51, 51, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        }
-        
-        .back-btn:active {
-            transform: translateY(0);
-            box-shadow: 
-                0 2px 8px rgba(255, 51, 51, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            background: #cc0000;
         }
 
         /* אפקט הבהוב לכפתור שנלחץ */
@@ -276,30 +156,15 @@
         
         /* סגנון תצוגת שיר נוכחי */
         .current-song-container {
-            background: linear-gradient(135deg, rgba(29, 185, 84, 0.1) 0%, rgba(30, 215, 96, 0.05) 100%);
-            backdrop-filter: blur(10px);
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin: 0;
-            border: 1px solid rgba(29, 185, 84, 0.3);
-            border-right: 3px solid #1db954;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 10px;
+            margin: 5px 0;
+            border-right: 2px solid #1db954;
             width: 100%;
-            text-align: center;
+            text-align: right;
             display: block !important;
             visibility: visible !important;
-            box-shadow: 
-                0 4px 15px rgba(0, 0, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-        }
-        
-        .current-song-container:hover {
-            transform: translateX(-3px);
-            border-right-width: 4px;
-            box-shadow: 
-                0 6px 20px rgba(0, 0, 0, 0.3),
-                0 0 20px rgba(29, 185, 84, 0.2);
         }
         
         .day-mode .current-song-container {
@@ -313,22 +178,13 @@
         }
         
         .current-song {
-            font-weight: 600;
+            font-weight: bold;
             font-size: 1em;
-            background: linear-gradient(90deg, #1db954 0%, #1ed760 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #1db954;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
-            text-align: center;
-        }
-        
-        @keyframes slideText {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
         }
         
         /* סגנון בקר עוצמת שמע */
@@ -336,11 +192,10 @@
             width: 100%;
             display: flex !important;
             align-items: center;
-            gap: 10px;
-            margin: 0;
+            gap: 5px;
+            margin: 5px 0;
             justify-content: center;
             visibility: visible !important;
-            flex-shrink: 0;
         }
         
         .volume-slider {
@@ -348,56 +203,29 @@
             -moz-appearance: none;
             appearance: none;
             width: 100%;
-            height: 8px;
-            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(29,185,84,0.2) 100%);
-            border-radius: 10px;
+            height: 6px;
+            background: #444;
+            border-radius: 5px;
             outline: none;
-            box-shadow: 
-                inset 0 2px 4px rgba(0, 0, 0, 0.3),
-                0 1px 0 rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
-        }
-        
-        .volume-slider:hover {
-            background: linear-gradient(90deg, rgba(255,255,255,0.15) 0%, rgba(29,185,84,0.3) 100%);
         }
         
         .volume-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 28px;
-            height: 28px;
+            width: 25px;
+            height: 25px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+            background: #1db954;
             cursor: pointer;
-            box-shadow: 
-                0 4px 12px rgba(29, 185, 84, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .volume-slider::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
-            box-shadow: 
-                0 6px 16px rgba(29, 185, 84, 0.7),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4);
-        }
-        
-        .volume-slider::-webkit-slider-thumb:active {
-            transform: scale(1.05);
         }
         
         .volume-slider::-moz-range-thumb {
-            width: 28px;
-            height: 28px;
+            width: 25px;
+            height: 25px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+            background: #1db954;
             cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 
-                0 4px 12px rgba(29, 185, 84, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border: none;
         }
         
         .day-mode .volume-slider::-webkit-slider-thumb {
@@ -466,9 +294,9 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px 12px;
+            padding: 10px;
             background: rgba(0, 0, 0, 0.5);
-            border-radius: 12px;
+            border-radius: 15px;
             cursor: pointer;
             z-index: 100;
         }
@@ -560,14 +388,14 @@
             color: white;
             font-size: 20px;
             width: 35px;
-            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+            height: 35px;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 
-                0 4px 12px rgba(29, 185, 84, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
         }
 
         .close-prompt:hover {
@@ -591,22 +419,20 @@
         <h2 style="font-size: 22px; margin: 5px 0;">🎶 נגן מוזיקה לרכב 🚗</h2>
         <div id="player" class="video-frame"></div>
 
-        <div class="playlist-name" id="playlistName">🎵 פלייליסט ראשי - נהיגה בכיף 🚗</div>
-        
-        <!-- כפתורי שליטה ראשיים -->
         <div class="control-buttons">
             <button class="control-btn" onclick="buttonClickEffect(this); previousTrack()">⏮</button>
             <button class="control-btn" onclick="buttonClickEffect(this); playVideo()">▶</button>
             <button class="control-btn" onclick="buttonClickEffect(this); pauseVideo()">⏸</button>
             <button class="control-btn" onclick="buttonClickEffect(this); nextTrack()">⏭</button>
-            <button class="control-btn shuffle-btn" id="shuffleBtn" onclick="buttonClickEffect(this); toggleShuffle()">🔀</button>
         </div>
+
+        <div class="playlist-name" id="playlistName">🎵 פלייליסט ראשי - נהיגה בכיף 🚗</div>
         
         <!-- כפתורי ניהול פלייליסטים -->
-        <div class="control-buttons">
-            <button class="control-btn" onclick="buttonClickEffect(this); previousPlaylist()" id="prevPlaylistBtn" style="display: none;">⏮️</button>
-            <button class="control-btn" onclick="buttonClickEffect(this); openPlaylistManager()">⚙️</button>
-            <button class="control-btn" onclick="buttonClickEffect(this); nextPlaylist()" id="nextPlaylistBtn" style="display: none;">⏭️</button>
+        <div class="control-buttons" style="margin-top: 10px;">
+            <button class="control-btn" onclick="buttonClickEffect(this); previousPlaylist()" id="prevPlaylistBtn" style="display: none;">⏮️ פלייליסט קודם</button>
+            <button class="control-btn" onclick="buttonClickEffect(this); openPlaylistManager()">⚙️ ניהול פלייליסטים</button>
+            <button class="control-btn" onclick="buttonClickEffect(this); nextPlaylist()" id="nextPlaylistBtn" style="display: none;">פלייליסט הבא ⏭️</button>
         </div>
         
         <!-- תצוגת שיר נוכחי -->
@@ -622,20 +448,6 @@
         </div>
 
         <button class="back-btn" onclick="buttonClickEffect(this); goBack()">🔙 חזרה לתפריט הראשי</button>
-        
-        <!-- הודעת הרשאות -->
-        <div id="permissionBanner" style="display: none; background: linear-gradient(135deg, rgba(29, 185, 84, 0.2) 0%, rgba(30, 215, 96, 0.1) 100%); backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(29, 185, 84, 0.3); text-align: center;">
-            <div style="font-size: 14px; color: #1db954; margin-bottom: 10px; font-weight: 600;">
-                🔐 כדי שהמוזיקה תמשיך לנגן ברקע
-            </div>
-            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.8); margin-bottom: 12px;">
-                נדרשות הרשאות: התראות, מניעת כיבוי מסך, ואחסון קבוע
-            </div>
-            <button onclick="requestAllPermissions(); document.getElementById('permissionBanner').style.display='none';" 
-                style="background: linear-gradient(135deg, #1db954 0%, #1ed760 100%); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(29, 185, 84, 0.4);">
-                ✅ אשר הרשאות
-            </button>
-        </div>
         
         <!-- הוסרו קיצורי מקלדת כדי לחסוך מקום במסך -->
     </div>
@@ -693,78 +505,6 @@
             { name: "🎸 רוק ישראלי 🇮🇱", id: "PLWkfrFkdyL1Fdaso2jWg1gevOxRe2jKvG" },
             { name: "🎤 מזרחית מושלמת 💃", id: "PLWkfrFkdyL1Fdaso2jWg1gevOxRe2jKvG" }
         ];
-        
-        // בקשת הרשאות מפורשת מהמשתמש
-        async function requestAllPermissions() {
-            console.log('🔐 מבקש הרשאות מהמשתמש...');
-            
-            const permissions = {
-                notifications: false,
-                wakeLock: false,
-                persistentStorage: false
-            };
-            
-            // 1. בקשת הרשאות התראות
-            if ('Notification' in window) {
-                try {
-                    const permission = await Notification.requestPermission();
-                    permissions.notifications = permission === 'granted';
-                    if (permissions.notifications) {
-                        console.log('✅ הרשאות התראות ניתנו');
-                        // הצג התראת בדיקה
-                        new Notification('🎵 נגן מוזיקה לרכב', {
-                            body: 'ההרשאות אושרו! המוזיקה תמשיך לנגן ברקע 🚗',
-                            icon: 'car-music-icon.png',
-                            tag: 'permission-granted'
-                        });
-                    }
-                } catch (e) {
-                    console.warn('⚠️ לא ניתן לבקש הרשאות התראות:', e);
-                }
-            }
-            
-            // 2. בקשת Wake Lock
-            if ('wakeLock' in navigator) {
-                try {
-                    const wakeLock = await navigator.wakeLock.request('screen');
-                    permissions.wakeLock = true;
-                    console.log('✅ Wake Lock הופעל - המסך לא יכבה');
-                    wakeLock.addEventListener('release', () => {
-                        console.log('⚠️ Wake Lock שוחרר');
-                    });
-                } catch (e) {
-                    console.warn('⚠️ Wake Lock נכשל:', e);
-                }
-            }
-            
-            // 3. בקשת אחסון קבוע (Persistent Storage)
-            if ('storage' in navigator && 'persist' in navigator.storage) {
-                try {
-                    const isPersisted = await navigator.storage.persist();
-                    permissions.persistentStorage = isPersisted;
-                    if (isPersisted) {
-                        console.log('✅ אחסון קבוע אושר - הנתונים לא יימחקו');
-                    } else {
-                        console.warn('⚠️ אחסון קבוע נדחה');
-                    }
-                } catch (e) {
-                    console.warn('⚠️ לא ניתן לבקש אחסון קבוע:', e);
-                }
-            }
-            
-            // 4. הצגת סיכום למשתמש
-            const grantedCount = Object.values(permissions).filter(p => p).length;
-            const totalCount = Object.keys(permissions).length;
-            
-            console.log(`📊 הרשאות שאושרו: ${grantedCount}/${totalCount}`);
-            console.log('📋 פירוט הרשאות:', permissions);
-            
-            // שמור בלוקל סטורג' שההרשאות התבקשו
-            localStorage.setItem('permissionsRequested', 'true');
-            localStorage.setItem('permissionsGranted', JSON.stringify(permissions));
-            
-            return permissions;
-        }
         
         // שמירת פלייליסטים ב-LocalStorage
         function savePlaylists() {
@@ -882,12 +622,6 @@
             // הצגת הודעה למשתמש שהפלייליסט נטען
             document.getElementById('currentSong').textContent = 'טוען פלייליסט... אנא המתן';
             
-            // בדוק אם ההרשאות כבר התבקשו
-            const permissionsRequested = localStorage.getItem('permissionsRequested');
-            if (!permissionsRequested) {
-                console.log('🔔 הרשאות טרם התבקשו - יבוקשו בלחיצה הראשונה');
-            }
-            
             try {
                 createPlayer();
             } catch (e) {
@@ -964,17 +698,9 @@
             document.getElementById('playlistName').textContent = playlists[currentPlaylistIndex].name;
         }
 
-        async function playVideo() {
+        function playVideo() {
             if (player && player.playVideo) {
                 hasUserInteracted = true;
-                
-                // בקש הרשאות בפעם הראשונה
-                const permissionsRequested = localStorage.getItem('permissionsRequested');
-                if (!permissionsRequested) {
-                    console.log('🔐 מבקש הרשאות לפני ניגון...');
-                    await requestAllPermissions();
-                }
-                
                 player.playVideo();
                 startAdDetection(); // הפעל זיהוי פרסומות
             }
@@ -1802,18 +1528,6 @@
             
             // עדכון כפתורי ניווט פלייליסטים
             updatePlaylistNavigation();
-            
-            // הצג באנר הרשאות אם לא התבקשו
-            const permissionsRequested = localStorage.getItem('permissionsRequested');
-            if (!permissionsRequested) {
-                setTimeout(() => {
-                    const banner = document.getElementById('permissionBanner');
-                    if (banner) {
-                        banner.style.display = 'block';
-                        console.log('📢 מציג באנר בקשת הרשאות');
-                    }
-                }, 2000); // הצג אחרי 2 שניות
-            }
             
             // בדיקה שכל האלמנטים מוצגים
             setTimeout(function() {
