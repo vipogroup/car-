@@ -591,20 +591,22 @@
         <h2 style="font-size: 22px; margin: 5px 0;">🎶 נגן מוזיקה לרכב 🚗</h2>
         <div id="player" class="video-frame"></div>
 
+        <div class="playlist-name" id="playlistName">🎵 פלייליסט ראשי - נהיגה בכיף 🚗</div>
+        
+        <!-- כפתורי שליטה ראשיים -->
         <div class="control-buttons">
             <button class="control-btn" onclick="buttonClickEffect(this); previousTrack()">⏮</button>
             <button class="control-btn" onclick="buttonClickEffect(this); playVideo()">▶</button>
             <button class="control-btn" onclick="buttonClickEffect(this); pauseVideo()">⏸</button>
             <button class="control-btn" onclick="buttonClickEffect(this); nextTrack()">⏭</button>
+            <button class="control-btn shuffle-btn" id="shuffleBtn" onclick="buttonClickEffect(this); toggleShuffle()">🔀</button>
         </div>
-
-        <div class="playlist-name" id="playlistName">🎵 פלייליסט ראשי - נהיגה בכיף 🚗</div>
         
         <!-- כפתורי ניהול פלייליסטים -->
-        <div class="control-buttons" style="margin-top: 10px;">
-            <button class="control-btn" onclick="buttonClickEffect(this); previousPlaylist()" id="prevPlaylistBtn" style="display: none;">⏮️ פלייליסט קודם</button>
-            <button class="control-btn" onclick="buttonClickEffect(this); openPlaylistManager()">⚙️ ניהול פלייליסטים</button>
-            <button class="control-btn" onclick="buttonClickEffect(this); nextPlaylist()" id="nextPlaylistBtn" style="display: none;">פלייליסט הבא ⏭️</button>
+        <div class="control-buttons">
+            <button class="control-btn" onclick="buttonClickEffect(this); previousPlaylist()" id="prevPlaylistBtn" style="display: none;">⏮️</button>
+            <button class="control-btn" onclick="buttonClickEffect(this); openPlaylistManager()">⚙️</button>
+            <button class="control-btn" onclick="buttonClickEffect(this); nextPlaylist()" id="nextPlaylistBtn" style="display: none;">⏭️</button>
         </div>
         
         <!-- תצוגת שיר נוכחי -->
