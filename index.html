@@ -472,6 +472,18 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
+        /* אנימציה לאינדיקטור קולי */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.05);
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -495,6 +507,14 @@
         </div>
 
         <div class="playlist-name" id="playlistName">🎵 פלייליסט ראשי - נהיגה בכיף 🚗</div>
+        
+        <!-- אינדיקטור שליטה קולית -->
+        <div id="voiceIndicator" style="display: none; background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 8px 15px; border-radius: 20px; margin: 10px auto; text-align: center; font-size: 14px; font-weight: bold; animation: pulse 1.5s infinite;">
+            🎤 מאזין לפקודות קוליות...
+        </div>
+        <div id="voiceCommand" style="display: none; background: #27ae60; color: white; padding: 8px 15px; border-radius: 20px; margin: 10px auto; text-align: center; font-size: 14px; font-weight: bold;">
+            ✅ פקודה זוהתה
+        </div>
         
         <!-- כפתורי ניהול פלייליסטים -->
         <div class="control-buttons" style="margin-top: 10px;">
@@ -1723,11 +1743,165 @@
             });
         }
 
+        // מערכת זיהוי קולי
+        let recognition = null;
+        let isVoiceActive = false;
+
+        function initVoiceRecognition() {
+            // בדיקה אם הדפדפן תומך בזיהוי קולי
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                console.warn('⚠️ הדפדפן לא תומך בזיהוי קולי');
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true; // האזנה רציפה
+            recognition.interimResults = false;
+            recognition.lang = 'he-IL'; // עברית כברירת מחדל
+            recognition.maxAlternatives = 3;
+
+            // מילון פקודות
+            const commands = {
+                // שיר הבא
+                'next': () => { nextTrack(); return 'שיר הבא'; },
+                'הבא': () => { nextTrack(); return 'שיר הבא'; },
+                'שיר הבא': () => { nextTrack(); return 'שיר הבא'; },
+                'next song': () => { nextTrack(); return 'שיר הבא'; },
+                
+                // שיר קודם
+                'previous': () => { previousTrack(); return 'שיר קודם'; },
+                'קודם': () => { previousTrack(); return 'שיר קודם'; },
+                'שיר קודם': () => { previousTrack(); return 'שיר קודם'; },
+                'previous song': () => { previousTrack(); return 'שיר קודם'; },
+                
+                // נגן
+                'play': () => { playVideo(); return 'מנגן'; },
+                'נגן': () => { playVideo(); return 'מנגן'; },
+                'תנגן': () => { playVideo(); return 'מנגן'; },
+                
+                // עצור
+                'pause': () => { pauseVideo(); return 'עצור'; },
+                'stop': () => { pauseVideo(); return 'עצור'; },
+                'עצור': () => { pauseVideo(); return 'עצור'; },
+                'תעצור': () => { pauseVideo(); return 'עצור'; },
+                
+                // השתק
+                'mute': () => { toggleMute(); return 'השתק'; },
+                'השתק': () => { toggleMute(); return 'השתק'; },
+                'שקט': () => { toggleMute(); return 'השתק'; },
+                'השתק מוזיקה': () => { toggleMute(); return 'השתק'; },
+                
+                // פלייליסט הבא
+                'next playlist': () => { nextPlaylist(); return 'פלייליסט הבא'; },
+                'פלייליסט הבא': () => { nextPlaylist(); return 'פלייליסט הבא'; },
+                'עבור פלייליסט': () => { nextPlaylist(); return 'פלייליסט הבא'; },
+                
+                // פלייליסט קודם
+                'previous playlist': () => { previousPlaylist(); return 'פלייליסט קודם'; },
+                'פלייליסט קודם': () => { previousPlaylist(); return 'פלייליסט קודם'; }
+            };
+
+            recognition.onstart = () => {
+                isVoiceActive = true;
+                document.getElementById('voiceIndicator').style.display = 'block';
+                console.log('🎤 זיהוי קולי הופעל - מאזין...');
+            };
+
+            recognition.onresult = (event) => {
+                const last = event.results.length - 1;
+                const transcript = event.results[last][0].transcript.toLowerCase().trim();
+                
+                console.log('🎤 זוהה:', transcript);
+                
+                // חיפוש פקודה מתאימה
+                let commandExecuted = false;
+                for (const [command, action] of Object.entries(commands)) {
+                    if (transcript.includes(command)) {
+                        const actionName = action();
+                        console.log(`✅ מבצע פקודה: ${actionName}`);
+                        
+                        // הצג משוב ויזואלי
+                        const commandDiv = document.getElementById('voiceCommand');
+                        commandDiv.textContent = `✅ ${actionName}`;
+                        commandDiv.style.display = 'block';
+                        
+                        setTimeout(() => {
+                            commandDiv.style.display = 'none';
+                        }, 2000);
+                        
+                        commandExecuted = true;
+                        break;
+                    }
+                }
+                
+                if (!commandExecuted) {
+                    console.log('❓ פקודה לא זוהתה:', transcript);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('❌ שגיאה בזיהוי קולי:', event.error);
+                
+                if (event.error === 'no-speech') {
+                    console.log('🔇 לא זוהה דיבור - ממשיך להאזין...');
+                } else if (event.error === 'not-allowed') {
+                    console.error('🚫 הרשאות מיקרופון נדחו');
+                    document.getElementById('voiceIndicator').style.display = 'none';
+                    isVoiceActive = false;
+                }
+            };
+
+            recognition.onend = () => {
+                console.log('🔄 זיהוי קולי הסתיים - מפעיל מחדש...');
+                
+                // הפעל מחדש אוטומטית (האזנה רציפה)
+                if (isVoiceActive) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.log('⏳ ממתין לפני הפעלה מחדש...');
+                        setTimeout(() => {
+                            try {
+                                recognition.start();
+                            } catch (err) {
+                                console.error('❌ לא ניתן להפעיל מחדש:', err);
+                            }
+                        }, 1000);
+                    }
+                }
+            };
+
+            // הפעל את הזיהוי הקולי
+            try {
+                recognition.start();
+                console.log('🎤 מערכת זיהוי קולי הופעלה!');
+            } catch (e) {
+                console.error('❌ לא ניתן להפעיל זיהוי קולי:', e);
+            }
+        }
+
         // בקשת הרשאות מהמשתמש
         async function requestAllPermissions() {
             console.log('🔐 מבקש הרשאות מהמשתמש...');
             
             const permissions = [];
+            
+            // 0. הרשאות מיקרופון לזיהוי קולי
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                permissions.push('✅ מיקרופון (שליטה קולית)');
+                stream.getTracks().forEach(track => track.stop()); // עצור את הזרם
+                
+                // הפעל זיהוי קולי
+                setTimeout(() => {
+                    initVoiceRecognition();
+                }, 1000);
+            } catch (e) {
+                permissions.push('❌ מיקרופון (נדחה)');
+                console.warn('לא ניתן לקבל הרשאות מיקרופון:', e);
+            }
             
             // 1. הרשאות להתראות
             if ('Notification' in window && Notification.permission === 'default') {
