@@ -461,6 +461,9 @@
         let lastVolume = 100; // נוסיף משתנה לשמירת עוצמת הקול האחרונה
         let deferredPrompt; // לשמירת האירוע של התקנת PWA
         let hasUserInteracted = false; // מניעת autoplay – ננגן רק לאחר לחיצה
+        let adDetectionInterval = null; // מזהה זיהוי פרסומות
+        let isAdPlaying = false; // האם מתנגנת פרסומת כרגע
+        let lastKnownDuration = 0; // משך הסרטון האחרון שנשמר
 
         // טעינת פלייליסטים מ-LocalStorage או ברירת מחדל
         let playlists = JSON.parse(localStorage.getItem('musicPlaylists')) || [
@@ -663,12 +666,14 @@
             if (player && player.playVideo) {
                 hasUserInteracted = true;
                 player.playVideo();
+                startAdDetection(); // הפעל זיהוי פרסומות
             }
         }
 
         function pauseVideo() {
             if (player && player.pauseVideo) {
                 player.pauseVideo();
+                stopAdDetection(); // עצור זיהוי פרסומות
             }
         }
 
@@ -875,13 +880,82 @@
             }, 30000);
         }
         
+        // זיהוי ודילוג על פרסומות
+        function detectAndSkipAds() {
+            if (!player || !player.getDuration || !player.getCurrentTime) return;
+            
+            try {
+                const duration = player.getDuration();
+                const currentTime = player.getCurrentTime();
+                const playerState = player.getPlayerState();
+                
+                // זיהוי פרסומת: משך קצר מאוד (פחות מ-60 שניות) או שינוי פתאומי במשך
+                const isPossibleAd = (
+                    (duration > 0 && duration < 60) || // פרסומות בדרך כלל קצרות
+                    (lastKnownDuration > 0 && Math.abs(duration - lastKnownDuration) > 30) // שינוי פתאומי במשך
+                );
+                
+                if (isPossibleAd && playerState === 1) { // 1 = מנגן
+                    if (!isAdPlaying) {
+                        console.log('🚫 זוהתה פרסומת - מפעיל השתקה ודילוג מהיר');
+                        isAdPlaying = true;
+                        
+                        // השתקת שמע
+                        if (player.isMuted && !player.isMuted()) {
+                            lastVolume = player.getVolume();
+                            player.mute();
+                        }
+                        
+                        // דילוג מהיר קדימה
+                        const skipTo = Math.min(currentTime + 5, duration - 1);
+                        if (skipTo > currentTime) {
+                            player.seekTo(skipTo, true);
+                        }
+                    }
+                } else {
+                    // לא פרסומת - החזר שמע רגיל
+                    if (isAdPlaying) {
+                        console.log('✅ פרסומת הסתיימה - מחזיר שמע רגיל');
+                        isAdPlaying = false;
+                        
+                        if (player.isMuted && player.isMuted() && lastVolume > 0) {
+                            player.unMute();
+                            player.setVolume(lastVolume);
+                        }
+                    }
+                    lastKnownDuration = duration;
+                }
+            } catch (e) {
+                console.error('שגיאה בזיהוי פרסומות:', e);
+            }
+        }
+        
+        // הפעלת זיהוי פרסומות
+        function startAdDetection() {
+            if (adDetectionInterval) {
+                clearInterval(adDetectionInterval);
+            }
+            // בדיקה כל 500 מילישניות
+            adDetectionInterval = setInterval(detectAndSkipAds, 500);
+            console.log('🛡️ מערכת זיהוי פרסומות הופעלה');
+        }
+        
+        // עצירת זיהוי פרסומות
+        function stopAdDetection() {
+            if (adDetectionInterval) {
+                clearInterval(adDetectionInterval);
+                adDetectionInterval = null;
+            }
+        }
+
         // עדכון שם השיר הנוכחי
         function updateCurrentSong() {
             if (player && player.getVideoData) {
                 try {
                     const videoData = player.getVideoData();
                     if (videoData && videoData.title) {
-                        document.getElementById('currentSong').textContent = videoData.title;
+                        const adIndicator = isAdPlaying ? ' 🚫 [מדלג על פרסומת...]' : '';
+                        document.getElementById('currentSong').textContent = videoData.title + adIndicator;
                     } else if (hasUserInteracted) {
                         document.getElementById('currentSong').textContent = 'לא ניתן לקבל מידע על השיר';
                     }
