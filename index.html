@@ -484,9 +484,73 @@
             }
         }
 
+        /* באנר עדכון */
+        #updateBanner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            z-index: 10001;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        #updateBanner button {
+            background: white;
+            color: #3498db;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        #updateBanner button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #updateBanner .dismiss-btn {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
     </style>
 </head>
 <body>
+    <!-- באנר עדכון -->
+    <div id="updateBanner" style="display: none;">
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">
+            🔄 עדכון חדש זמין!
+        </div>
+        <div style="font-size: 14px; margin-bottom: 10px;">
+            גרסה חדשה עם שיפורים ותכונות חדשות
+        </div>
+        <button onclick="updateApp()" style="background: #27ae60; color: white;">
+            ✅ עדכן עכשיו
+        </button>
+        <button onclick="dismissUpdate()" class="dismiss-btn">
+            ⏰ אחר כך
+        </button>
+    </div>
+
     <!-- מתג יום/לילה -->
     <div class="mode-switch" onclick="toggleDayNightMode()">
         <span class="mode-icon" id="mode-icon">🌙</span>
@@ -574,6 +638,14 @@
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
+        // גרסת האפליקציה
+        const APP_VERSION = "2.1.0";
+        console.log(`🎵 נגן מוזיקה לרכב - גרסה ${APP_VERSION}`);
+        
+        // משתני מערכת עדכונים
+        let newServiceWorker = null;
+        let updateAvailable = false;
+        
         let player;
         let currentPlaylistIndex = 0;
         let isShuffle = false;
@@ -1735,6 +1807,55 @@
         // בדיקת סוג המכשיר בטעינה
         window.addEventListener('load', checkDeviceType);
         
+        // מערכת עדכונים
+        function updateApp() {
+            console.log('🔄 מתחיל עדכון...');
+            
+            if (newServiceWorker) {
+                // שלח הודעה ל-Service Worker החדש להפוך לפעיל
+                newServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+                
+                // הצג הודעה למשתמש
+                const banner = document.getElementById('updateBanner');
+                banner.innerHTML = `
+                    <div style="font-size: 18px; font-weight: bold;">
+                        ⏳ מעדכן את האפליקציה...
+                    </div>
+                `;
+                
+                // רענן את הדף אחרי שה-Service Worker החדש הופך לפעיל
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                console.log('⚠️ אין Service Worker חדש זמין');
+                dismissUpdate();
+            }
+        }
+        
+        function dismissUpdate() {
+            console.log('⏰ דחיית עדכון לאחר כך');
+            document.getElementById('updateBanner').style.display = 'none';
+            updateAvailable = false;
+        }
+        
+        function showUpdateBanner() {
+            console.log('🔔 מציג באנר עדכון');
+            const banner = document.getElementById('updateBanner');
+            banner.style.display = 'block';
+            updateAvailable = true;
+            
+            // התראה אם הדפדפן תומך
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('🔄 עדכון זמין!', {
+                    body: 'גרסה חדשה של נגן המוזיקה זמינה',
+                    icon: 'car-music-icon.png',
+                    tag: 'update',
+                    requireInteraction: false
+                });
+            }
+        }
+        
         // רישום Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -1742,14 +1863,39 @@
                     .then(registration => {
                         console.log('✅ Service Worker נרשם בהצלחה:', registration.scope);
                         
+                        // בדיקה תקופתית לעדכונים (כל 60 שניות)
+                        setInterval(() => {
+                            registration.update();
+                        }, 60000);
+                        
                         // בדיקה אם יש עדכון
                         registration.addEventListener('updatefound', () => {
                             console.log('🔄 נמצא עדכון ל-Service Worker');
+                            const installingWorker = registration.installing;
+                            
+                            installingWorker.addEventListener('statechange', () => {
+                                if (installingWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        // יש Service Worker קיים - זה עדכון!
+                                        console.log('✨ עדכון חדש זמין!');
+                                        newServiceWorker = installingWorker;
+                                        showUpdateBanner();
+                                    } else {
+                                        // התקנה ראשונה
+                                        console.log('✅ Service Worker הותקן בהצלחה');
+                                    }
+                                }
+                            });
                         });
                     })
                     .catch(error => {
                         console.error('❌ רישום Service Worker נכשל:', error);
                     });
+            });
+            
+            // האזנה להודעות מ-Service Worker
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('🔄 Service Worker החדש הפך לפעיל');
             });
         }
 

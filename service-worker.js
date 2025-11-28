@@ -1,10 +1,13 @@
 // Service Worker לשמירה על האפליקציה פעילה ברקע
-const CACHE_NAME = 'car-music-player-v1';
+const CACHE_NAME = 'car-music-player-v2.1.0';
+const APP_VERSION = '2.1.0';
 const urlsToCache = [
   'index.html',
   'manifest.json',
   'car-music-icon.png'
 ];
+
+console.log(`🚀 Service Worker גרסה ${APP_VERSION} טעון`);
 
 // התקנה
 self.addEventListener('install', event => {
@@ -80,6 +83,12 @@ self.addEventListener('message', event => {
       type: 'ALIVE',
       timestamp: Date.now()
     });
+  }
+  
+  // טיפול בבקשת עדכון מיידי
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('⚡ מקבל בקשה לעדכון מיידי');
+    self.skipWaiting();
   }
 });
 
