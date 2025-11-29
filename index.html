@@ -962,6 +962,23 @@
                 </div>
             </div>
             
+            <!-- חיפוש פלייליסטים ביוטיוב -->
+            <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <h3 style="color: white; margin-top: 0;">🔍 חיפוש פלייליסטים ביוטיוב</h3>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="youtubeSearchQuery" placeholder="חפש פלייליסטים... (לדוגמה: שירי נסיעה)" 
+                        style="flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #1db954; background: #444; color: white; font-size: 16px;"
+                        onkeypress="if(event.key==='Enter') searchYouTubePlaylists()">
+                    <button onclick="searchYouTubePlaylists()" style="padding: 10px 20px; background: #ff0000; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold;">
+                        🔍
+                    </button>
+                </div>
+                <div id="youtubeSearchResults" style="margin-top: 15px; max-height: 300px; overflow-y: auto;"></div>
+                <div id="searchLoading" style="display: none; text-align: center; padding: 20px; color: #aaa;">
+                    ⏳ מחפש...
+                </div>
+            </div>
+            
             <!-- רשימת פלייליסטים קיימים -->
             <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                 <h3 style="color: white; margin-top: 0;">📋 פלייליסטים קיימים</h3>
@@ -1503,6 +1520,96 @@
                 
                 alert('✅ הפלייליסט נמחק בהצלחה!');
             }
+        }
+
+        // YouTube API Key - החלף במפתח שלך מ-Google Cloud Console
+        const YOUTUBE_API_KEY = 'AIzaSyDfKzz3Q4VGNVzMrWGqMHQbOe9Hp4LRjyA';
+        
+        // חיפוש פלייליסטים ביוטיוב
+        async function searchYouTubePlaylists() {
+            const query = document.getElementById('youtubeSearchQuery').value.trim();
+            if (!query) {
+                alert('⚠️ הכנס מילות חיפוש');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('youtubeSearchResults');
+            const loadingDiv = document.getElementById('searchLoading');
+            
+            resultsDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch(
+                    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=playlist&maxResults=10&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`
+                );
+                
+                if (!response.ok) {
+                    throw new Error('שגיאה בחיפוש');
+                }
+                
+                const data = await response.json();
+                loadingDiv.style.display = 'none';
+                
+                if (!data.items || data.items.length === 0) {
+                    resultsDiv.innerHTML = '<div style="text-align: center; color: #aaa; padding: 20px;">לא נמצאו תוצאות</div>';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = data.items.map(item => {
+                    const playlistId = item.id.playlistId;
+                    const title = item.snippet.title;
+                    const channelTitle = item.snippet.channelTitle;
+                    const thumbnail = item.snippet.thumbnails.default.url;
+                    const isAlreadyAdded = playlists.some(p => p.id === playlistId);
+                    
+                    return `
+                        <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #333; border-radius: 8px; margin-bottom: 10px;">
+                            <img src="${thumbnail}" alt="" style="width: 60px; height: 45px; border-radius: 4px; object-fit: cover;">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="color: white; font-size: 14px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${title}">${title}</div>
+                                <div style="color: #aaa; font-size: 12px;">${channelTitle}</div>
+                            </div>
+                            <button onclick="addFromSearch('${playlistId}', '${title.replace(/'/g, "\\'")}')" 
+                                style="padding: 8px 15px; background: ${isAlreadyAdded ? '#666' : '#1db954'}; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; white-space: nowrap;"
+                                ${isAlreadyAdded ? 'disabled' : ''}>
+                                ${isAlreadyAdded ? '✓ קיים' : '➕ הוסף'}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                console.error('שגיאת חיפוש:', error);
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; color: #ff6b6b; padding: 20px;">
+                        ❌ שגיאה בחיפוש<br>
+                        <span style="font-size: 12px; color: #aaa;">נסה שוב מאוחר יותר</span>
+                    </div>
+                `;
+            }
+        }
+        
+        // הוספת פלייליסט מתוצאות החיפוש
+        function addFromSearch(playlistId, title) {
+            if (playlists.some(p => p.id === playlistId)) {
+                alert('❌ פלייליסט זה כבר קיים');
+                return;
+            }
+            
+            playlists.push({ 
+                name: `🎵 ${title}`, 
+                id: playlistId, 
+                type: 'playlist' 
+            });
+            savePlaylists();
+            renderPlaylistList();
+            
+            // עדכון כפתור בתוצאות החיפוש
+            searchYouTubePlaylists();
+            
+            alert(`✅ הפלייליסט "${title}" נוסף בהצלחה!`);
         }
 
         function onYouTubeIframeAPIReady() {
