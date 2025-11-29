@@ -850,6 +850,10 @@
                 <span>🔄</span>
                 <span>בדוק עדכון עכשיו</span>
             </button>
+            <button role="menuitem" onclick="handleHardReload(this)">
+                <span>♻️</span>
+                <span>רענון קשיח (ניקוי מטמון)</span>
+            </button>
             <button role="menuitem" onclick="handleGoBack(this)">
                 <span>🔙</span>
                 <span>חזרה לתפריט הראשי</span>
@@ -1840,6 +1844,39 @@
             goBack();
         }
 
+        async function hardReloadApp() {
+            try {
+                // נקה Service Worker קיים אם יש
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        try {
+                            await registration.unregister();
+                        } catch (swError) {
+                            console.warn('‎⚠️‎ Service Worker unregister failed:', swError);
+                        }
+                    }
+                }
+
+                // נקה Cache Storage (PWA)
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                }
+            } catch (error) {
+                console.warn('‎⚠️‎ hardReloadApp cleanup issue:', error);
+            } finally {
+                // רענון קשיח
+                window.location.reload(true);
+            }
+        }
+
+        function handleHardReload(button) {
+            buttonClickEffect(button);
+            closeSettingsMenu();
+            hardReloadApp();
+        }
+
         function updateDayNightSettingUI() {
             const icon = document.getElementById('dayNightSettingIcon');
             const label = document.getElementById('dayNightSettingLabel');
@@ -1881,7 +1918,7 @@
         // בדיקת זמן יום בטעינה
         window.addEventListener('load', checkDayTime);
         window.addEventListener('load', updateDayNightSettingUI);
-        
+
         // מניעת כיבוי מסך
         function preventScreenSleep() {
             // שימוש ב-NoSleep.js למניעת כיבוי מסך
