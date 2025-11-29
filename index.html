@@ -945,18 +945,20 @@
         <div style="max-width: 500px; margin: 20px auto; background: #333; padding: 20px; border-radius: 15px; border: 2px solid #1db954;">
             <h2 style="color: #1db954; text-align: center;">⚙️ ניהול פלייליסטים</h2>
             
-            <!-- טופס הוספת פלייליסט -->
+            <!-- טופס הוספת פלייליסט או סרטון -->
             <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                <h3 style="color: white; margin-top: 0;">➕ הוסף פלייליסט חדש</h3>
-                <input type="text" id="newPlaylistName" placeholder="שם הפלייליסט (לדוגמה: מוזיקה לנסיעה)" 
+                <h3 style="color: white; margin-top: 0;">➕ הוסף פלייליסט או סרטון</h3>
+                <input type="text" id="newPlaylistName" placeholder="שם (לדוגמה: מוזיקה לנסיעה)" 
                     style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #1db954; background: #444; color: white; font-size: 16px; box-sizing: border-box;">
-                <input type="text" id="newPlaylistId" placeholder="YouTube Playlist ID (לדוגמה: PLWkfrFkdyL1Fdaso2jWg1gevOxRe2jKvG)" 
+                <input type="text" id="newPlaylistId" placeholder="לינק YouTube - סרטון או פלייליסט" 
                     style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #1db954; background: #444; color: white; font-size: 16px; box-sizing: border-box;">
                 <button onclick="addNewPlaylist()" style="width: 100%; padding: 12px; background: #1db954; color: white; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; font-weight: bold;">
-                    ➕ הוסף פלייליסט
+                    ➕ הוסף
                 </button>
                 <div style="margin-top: 10px; font-size: 12px; color: #aaa; text-align: right;">
-                    💡 איך למצוא Playlist ID: פתח פלייליסט ב-YouTube, העתק את הקוד אחרי "list=" בכתובת
+                    💡 <b>תמיכה מלאה!</b> הדבק לינק מלא מ-YouTube:<br>
+                    • סרטון: https://www.youtube.com/watch?v=XXXXX<br>
+                    • פלייליסט: https://www.youtube.com/playlist?list=XXXXX
                 </div>
             </div>
             
@@ -1376,39 +1378,90 @@
                 return;
             }
             
-            listContainer.innerHTML = playlists.map((playlist, index) => `
+            listContainer.innerHTML = playlists.map((playlist, index) => {
+                const typeIcon = playlist.type === 'video' ? '🎬' : '🎵';
+                const typeLabel = playlist.type === 'video' ? 'סרטון' : 'פלייליסט';
+                return `
                 <div style="background: #444; padding: 12px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                     <div style="flex: 1; text-align: right;">
-                        <div style="color: white; font-weight: bold; margin-bottom: 5px;">${playlist.name}</div>
-                        <div style="color: #aaa; font-size: 12px;">ID: ${playlist.id}</div>
+                        <div style="color: white; font-weight: bold; margin-bottom: 5px;">${typeIcon} ${playlist.name}</div>
+                        <div style="color: #aaa; font-size: 12px;">${typeLabel} | ID: ${playlist.id}</div>
                     </div>
                     <button onclick="deletePlaylist(${index})" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 10px;">
                         🗑️ מחק
                     </button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
-        // הוספת פלייליסט חדש
+        // חילוץ Video ID מלינק YouTube
+        function extractYouTubeVideoId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
+                /^([\w-]{11})$/ // אם זה רק ה-ID עצמו
+            ];
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
+            }
+            return null;
+        }
+
+        // חילוץ Playlist ID מלינק YouTube
+        function extractYouTubePlaylistId(url) {
+            const patterns = [
+                /[?&]list=([\w-]+)/,
+                /^(PL[\w-]+)$/ // אם זה רק ה-ID עצמו
+            ];
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
+            }
+            return null;
+        }
+
+        // הוספת פלייליסט או סרטון חדש
         function addNewPlaylist() {
             const nameInput = document.getElementById('newPlaylistName');
             const idInput = document.getElementById('newPlaylistId');
             
             const name = nameInput.value.trim();
-            const id = idInput.value.trim();
+            const input = idInput.value.trim();
             
-            if (!name || !id) {
-                alert('❌ אנא מלא את שם הפלייליסט וה-ID');
+            if (!name || !input) {
+                alert('❌ אנא מלא את השם והלינק');
+                return;
+            }
+            
+            // נסה לזהות אם זה פלייליסט או סרטון
+            let id = null;
+            let type = 'playlist';
+            
+            // קודם כל בדוק פלייליסט (כי לפעמים יש לינקים עם שניהם)
+            const playlistId = extractYouTubePlaylistId(input);
+            const videoId = extractYouTubeVideoId(input);
+            
+            if (playlistId) {
+                id = playlistId;
+                type = 'playlist';
+                console.log('🎵 זוהה פלייליסט:', id);
+            } else if (videoId) {
+                id = videoId;
+                type = 'video';
+                console.log('🎬 זוהה סרטון:', id);
+            } else {
+                alert('❌ לא הצלחתי לזהות את הלינק. ודא שהדבקת לינק תקין מ-YouTube.');
                 return;
             }
             
             // בדיקה אם ה-ID כבר קיים
             if (playlists.some(p => p.id === id)) {
-                alert('❌ פלייליסט עם ID זה כבר קיים');
+                alert('❌ פריט עם ID זה כבר קיים');
                 return;
             }
             
-            playlists.push({ name, id });
+            playlists.push({ name, id, type });
             savePlaylists();
             renderPlaylistList();
             
@@ -1416,7 +1469,8 @@
             nameInput.value = '';
             idInput.value = '';
             
-            alert('✅ הפלייליסט נוסף בהצלחה!');
+            const typeHeb = type === 'video' ? 'סרטון' : 'פלייליסט';
+            alert(`✅ ה${typeHeb} נוסף בהצלחה!`);
         }
 
         // מחיקת פלייליסט
@@ -1473,20 +1527,34 @@
 
         function createPlayer() {
             console.log('יוצר נגן YouTube...');
+            const currentItem = playlists[currentPlaylistIndex];
+            const isVideo = currentItem.type === 'video';
+            
             try {
-                player = new YT.Player('player', {
+                // הגדרות שונות לסרטון בודד לעומת פלייליסט
+                const playerVars = {
+                    'autoplay': 0,
+                    'controls': 1,
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'enablejsapi': 1
+                };
+                
+                if (isVideo) {
+                    // סרטון בודד
+                    console.log('🎬 טוען סרטון בודד:', currentItem.id);
+                } else {
+                    // פלייליסט
+                    playerVars.listType = 'playlist';
+                    playerVars.list = currentItem.id;
+                    console.log('🎵 טוען פלייליסט:', currentItem.id);
+                }
+                
+                const playerConfig = {
                     height: '350',
                     width: '100%',
-                    playerVars: {
-                        'autoplay': 0,
-                        'controls': 1,
-                        'listType': 'playlist',
-                        'list': playlists[currentPlaylistIndex].id,
-                        'rel': 0,
-                        'modestbranding': 1,
-                        'enablejsapi': 1
-                    },
-                events: {
+                    playerVars: playerVars,
+                    events: {
                     'onReady': () => {
                         updatePlaylistName();
                         // הודעה למשתמש שצריך ללחוץ על כפתור הניגון
@@ -1558,16 +1626,25 @@
                         }
                     },
                     'onError': handlePlayerError
+                    }
+                };
+                
+                // אם זה סרטון בודד, הוסף את ה-videoId
+                if (isVideo) {
+                    playerConfig.videoId = currentItem.id;
                 }
-            });
+                
+                player = new YT.Player('player', playerConfig);
             } catch (error) {
                 console.error('שגיאה ביצירת נגן YouTube:', error);
                 // ניסיון שני אם הראשון נכשל
                 setTimeout(() => {
                     try {
-                        document.getElementById('player').innerHTML = '<iframe width="100%" height="350" src="https://www.youtube.com/embed/videoseries?list=' + 
-                            playlists[currentPlaylistIndex].id + 
-                            '&autoplay=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+                        const item = playlists[currentPlaylistIndex];
+                        const embedUrl = item.type === 'video' 
+                            ? `https://www.youtube.com/embed/${item.id}?autoplay=0&rel=0&modestbranding=1`
+                            : `https://www.youtube.com/embed/videoseries?list=${item.id}&autoplay=0&rel=0&modestbranding=1`;
+                        document.getElementById('player').innerHTML = `<iframe width="100%" height="350" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
                     } catch (e) {
                         console.error('ניסיון יצירת נגן גיבוי נכשל:', e);
                     }
@@ -1853,10 +1930,12 @@
                     // אם היצירה נכשלה, נסה בדרך אחרת
                     setTimeout(() => {
                         if (!player || (player && typeof player.getPlayerState !== 'function')) {
-                            console.log('ניסיון לטעון את הפלייליסט בדרך ישירה');
-                            document.getElementById('player').innerHTML = '<iframe width="100%" height="350" src="https://www.youtube.com/embed/videoseries?list=' + 
-                                playlists[currentPlaylistIndex].id + 
-                                '&autoplay=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+                            console.log('ניסיון לטעון בדרך ישירה');
+                            const item = playlists[currentPlaylistIndex];
+                            const embedUrl = item.type === 'video' 
+                                ? `https://www.youtube.com/embed/${item.id}?autoplay=0&rel=0&modestbranding=1`
+                                : `https://www.youtube.com/embed/videoseries?list=${item.id}&autoplay=0&rel=0&modestbranding=1`;
+                            document.getElementById('player').innerHTML = `<iframe width="100%" height="350" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
 
                             // עדכון שם הפלייליסט גם במצב זה
                             updatePlaylistName();
@@ -1867,9 +1946,11 @@
                 console.error('שגיאה בטעינת פלייליסט:', error);
 
                 // ניסיון אחרון באמצעות הטמעה ישירה ללא autoplay
-                document.getElementById('player').innerHTML = '<iframe width="100%" height="350" src="https://www.youtube.com/embed/videoseries?list=' + 
-                    playlists[currentPlaylistIndex].id + 
-                    '&autoplay=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+                const item = playlists[currentPlaylistIndex];
+                const embedUrl = item.type === 'video' 
+                    ? `https://www.youtube.com/embed/${item.id}?autoplay=0&rel=0&modestbranding=1`
+                    : `https://www.youtube.com/embed/videoseries?list=${item.id}&autoplay=0&rel=0&modestbranding=1`;
+                document.getElementById('player').innerHTML = `<iframe width="100%" height="350" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
 
                 updatePlaylistName();
             }
