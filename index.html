@@ -727,6 +727,7 @@
         // משתני מערכת עדכונים
         let newServiceWorker = null;
         let updateAvailable = false;
+        const AUTO_REFRESH_ON_UPDATE = true; // אילוץ רענון אוטומטי לאחר עדכון
         let updatePending = false;
         let refreshing = false;
         let updateListenerAttached = false;
@@ -2247,7 +2248,16 @@
 
                     if (registration.waiting) {
                         newServiceWorker = registration.waiting;
-                        showUpdateBanner();
+                        if (AUTO_REFRESH_ON_UPDATE) {
+                            console.log('🔄 Service Worker ממתין - מאלץ רענון!');
+                            updatePending = true;
+                            newServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 500);
+                        } else {
+                            showUpdateBanner();
+                        }
                     }
 
                     registration.addEventListener('updatefound', () => {
@@ -2256,7 +2266,17 @@
                         newServiceWorker.addEventListener('statechange', () => {
                             if (newServiceWorker.state === 'installed') {
                                 if (navigator.serviceWorker.controller) {
-                                    showUpdateBanner();
+                                    if (AUTO_REFRESH_ON_UPDATE) {
+                                        console.log('🔄 רענון אוטומטי מאולץ - מעדכן עכשיו!');
+                                        updatePending = true;
+                                        newServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        // המתן קצר ואז רענן
+                                        setTimeout(() => {
+                                            window.location.reload();
+                                        }, 500);
+                                    } else {
+                                        showUpdateBanner();
+                                    }
                                 } else {
                                     console.log('✅ האפליקציה הותקנה לראשונה');
                                 }
