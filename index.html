@@ -741,6 +741,7 @@
         let songShuffleHistory = [];
         let playlistShuffleQueue = [];
         let playlistShuffleHistory = [];
+        let userRequestedStop = false; // ניגן יפסיק רק אם המשתמש ביקש זאת מפורשות
         let isDayMode = false; // מצב ברירת מחדל: מצב לילה
         let lastVolume = 100; // נוסיף משתנה לשמירת עוצמת הקול האחרונה
         let deferredPrompt; // לשמירת האירוע של התקנת PWA
@@ -1188,10 +1189,31 @@
                     'onStateChange': (event) => {
                         // עדכון שם השיר כאשר השיר משתנה
                         if (event.data === YT.PlayerState.PLAYING) {
+                            userRequestedStop = false;
                             updateCurrentSong();
                             updatePlayPauseButton(true);
-                        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                        } else if (event.data === YT.PlayerState.PAUSED) {
                             updatePlayPauseButton(false);
+
+                            if (!userRequestedStop) {
+                                console.log('▶️ הנגן הושהה ללא בקשת המשתמש - ממשיך לנגן');
+                                setTimeout(() => {
+                                    if (player && player.getPlayerState && player.getPlayerState() === YT.PlayerState.PAUSED && !userRequestedStop) {
+                                        playVideo();
+                                    }
+                                }, 800);
+                            }
+                        } else if (event.data === YT.PlayerState.ENDED) {
+                            updatePlayPauseButton(false);
+
+                            if (!userRequestedStop) {
+                                console.log('⏭️ שיר הסתיים - עובר לשיר הבא אוטומטית');
+                                setTimeout(() => {
+                                    if (!userRequestedStop) {
+                                        nextTrack();
+                                    }
+                                }, 300);
+                            }
                         }
                     },
                     'onError': handlePlayerError
@@ -1216,8 +1238,17 @@
             document.getElementById('playlistName').textContent = playlists[currentPlaylistIndex].name;
         }
 
-        function playVideo() {
+        function playVideo(userInitiated = false) {
+            if (userRequestedStop && !userInitiated) {
+                console.log('⏸️ ניגון אוטומטי נחסם - המשתמש עצר את הנגן ידנית');
+                return;
+            }
+
             if (player && player.playVideo) {
+                if (userInitiated) {
+                    userRequestedStop = false;
+                }
+
                 hasUserInteracted = true;
                 player.playVideo();
                 startAdDetection(); // הפעל זיהוי פרסומות
@@ -1236,7 +1267,11 @@
             }
         }
 
-        function pauseVideo() {
+        function pauseVideo(userInitiated = false) {
+            if (userInitiated) {
+                userRequestedStop = true;
+            }
+
             if (player && player.pauseVideo) {
                 player.pauseVideo();
                 stopAdDetection();
@@ -1253,9 +1288,9 @@
             const state = player.getPlayerState();
             // YT.PlayerState.PLAYING === 1, PAUSED === 2, BUFFERING === 3, UNSTARTED === -1, ENDED === 0
             if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING) {
-                pauseVideo();
+                pauseVideo(true);
             } else {
-                playVideo();
+                playVideo(true);
             }
         }
 
@@ -1263,6 +1298,7 @@
             if (!player) return;
 
             hasUserInteracted = true;
+            userRequestedStop = false;
 
             if (songShuffleEnabled && playNextShuffledSong()) {
                 return;
@@ -1270,6 +1306,11 @@
 
             if (player.nextVideo) {
                 player.nextVideo();
+                setTimeout(() => {
+                    if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                        playVideo();
+                    }
+                }, 400);
             }
         }
 
@@ -1277,6 +1318,7 @@
             if (!player) return;
 
             hasUserInteracted = true;
+            userRequestedStop = false;
 
             if (songShuffleEnabled && playPreviousShuffledSong()) {
                 return;
@@ -1284,6 +1326,11 @@
 
             if (player.previousVideo) {
                 player.previousVideo();
+                setTimeout(() => {
+                    if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                        playVideo();
+                    }
+                }, 400);
             }
         }
 
@@ -1670,14 +1717,14 @@
 
                     // הגדרת פעולות שליטה
                     navigator.mediaSession.setActionHandler('play', () => {
-                        playVideo();
+                        playVideo(true);
                         // וודא שה-background audio פעיל
                         if (backgroundAudio && backgroundAudio.paused) {
                             backgroundAudio.play().catch(e => console.log('Background audio play failed'));
                         }
                     });
                     navigator.mediaSession.setActionHandler('pause', () => {
-                        pauseVideo();
+                        pauseVideo(true);
                         // עצור גם את ה-background audio
                         if (backgroundAudio && !backgroundAudio.paused) {
                             backgroundAudio.pause();
@@ -1752,10 +1799,19 @@
 
             currentSongLabel.textContent = message + ' מדלג לשיר הבא...';
 
-            if (player && player.nextVideo && hasUserInteracted) {
+            if (!userRequestedStop && player && player.nextVideo && hasUserInteracted) {
                 setTimeout(() => {
+                    if (userRequestedStop) {
+                        return;
+                    }
                     try {
+                        userRequestedStop = false;
                         player.nextVideo();
+                        setTimeout(() => {
+                            if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING && !userRequestedStop) {
+                                playVideo();
+                            }
+                        }, 500);
                     } catch (err) {
                         console.error('ניסיון מעבר לשיר הבא נכשל:', err);
                     }
@@ -2399,15 +2455,15 @@
                 'previous song': () => { previousTrack(); return 'שיר קודם'; },
                 
                 // נגן
-                'play': () => { playVideo(); return 'מנגן'; },
-                'נגן': () => { playVideo(); return 'מנגן'; },
-                'תנגן': () => { playVideo(); return 'מנגן'; },
+                'play': () => { playVideo(true); return 'מנגן'; },
+                'נגן': () => { playVideo(true); return 'מנגן'; },
+                'תנגן': () => { playVideo(true); return 'מנגן'; },
                 
                 // עצור
-                'pause': () => { pauseVideo(); return 'עצור'; },
-                'stop': () => { pauseVideo(); return 'עצור'; },
-                'עצור': () => { pauseVideo(); return 'עצור'; },
-                'תעצור': () => { pauseVideo(); return 'עצור'; },
+                'pause': () => { pauseVideo(true); return 'עצור'; },
+                'stop': () => { pauseVideo(true); return 'עצור'; },
+                'עצור': () => { pauseVideo(true); return 'עצור'; },
+                'תעצור': () => { pauseVideo(true); return 'עצור'; },
                 
                 // השתק
                 'mute': () => { toggleMute(); return 'השתק'; },
