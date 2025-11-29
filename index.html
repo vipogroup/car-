@@ -487,23 +487,99 @@
             color: #4169E1;
         }
 
-        /* סגנון מתג יום/לילה */
-        .mode-switch {
-            position: absolute;
+        /* תפריט הגדרות */
+        .settings-menu {
+            position: fixed;
             top: 20px;
             right: 20px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-end;
             gap: 10px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 15px;
-            cursor: pointer;
-            z-index: 100;
+            z-index: 1100;
         }
 
-        .mode-icon {
-            font-size: 24px;
+        .settings-toggle {
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            padding: 10px 16px;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .settings-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.75);
+        }
+
+        .settings-dropdown {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(34, 34, 34, 0.95);
+            border-radius: 14px;
+            padding: 14px 16px;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+            min-width: 200px;
+            direction: rtl;
+        }
+
+        .settings-dropdown.open {
+            display: flex;
+        }
+
+        .settings-dropdown button {
+            background: linear-gradient(135deg, #1db954, #0b7d3b);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 15px;
+            font-weight: 600;
+            text-align: right;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .settings-dropdown button span:first-child {
+            font-size: 18px;
+        }
+
+        .settings-dropdown button:hover {
+            transform: translateX(-3px);
+            box-shadow: 0 8px 18px rgba(29, 185, 84, 0.4);
+        }
+
+        .day-mode .settings-toggle {
+            background: rgba(255, 255, 255, 0.85);
+            color: #1f3b8a;
+            box-shadow: 0 4px 14px rgba(65, 105, 225, 0.35);
+        }
+
+        .day-mode .settings-toggle:hover {
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .day-mode .settings-dropdown {
+            background: rgba(255, 255, 255, 0.97);
+            box-shadow: 0 14px 28px rgba(65, 105, 225, 0.35);
+        }
+
+        .day-mode .settings-dropdown button {
+            background: linear-gradient(135deg, #5a6ff7, #4dd2ff);
+            color: #0f1b3d;
+        }
+
+        .day-mode .settings-dropdown button:hover {
+            box-shadow: 0 8px 18px rgba(90, 111, 247, 0.35);
         }
 
         /* סגנון למצב יום */
@@ -557,9 +633,13 @@
                 font-size: 20px;
             }
 
-            .mode-switch {
-                top: 10px;
-                right: 10px;
+            .settings-menu {
+                top: 12px;
+                right: 12px;
+            }
+
+            .settings-dropdown {
+                min-width: 170px;
             }
         }
         
@@ -756,9 +836,25 @@
         </button>
     </div>
 
-    <!-- מתג יום/לילה -->
-    <div class="mode-switch" onclick="toggleDayNightMode()">
-        <span class="mode-icon" id="mode-icon">🌙</span>
+    <!-- תפריט הגדרות מערכת -->
+    <div class="settings-menu">
+        <button class="settings-toggle" id="settingsToggleBtn" onclick="toggleSettingsMenu(event)" aria-label="הגדרות מערכת" aria-expanded="false">
+            ☰
+        </button>
+        <div class="settings-dropdown" id="settingsDropdown" role="menu" aria-hidden="true">
+            <button id="dayNightSettingBtn" role="menuitem" onclick="handleDayNightToggle(this)">
+                <span id="dayNightSettingIcon">🌙</span>
+                <span id="dayNightSettingLabel">הפעל מצב יום</span>
+            </button>
+            <button role="menuitem" onclick="handleUpdateCheck(this)">
+                <span>🔄</span>
+                <span>בדוק עדכון עכשיו</span>
+            </button>
+            <button role="menuitem" onclick="handleGoBack(this)">
+                <span>🔙</span>
+                <span>חזרה לתפריט הראשי</span>
+            </button>
+        </div>
     </div>
 
     <!-- Audio נסתר לניגון ברקע -->
@@ -792,10 +888,6 @@
 
         <div class="playlist-name" id="playlistName">🎵 פלייליסט ראשי - נהיגה בכיף 🚗</div>
 
-        <button class="update-check-btn" onclick="buttonClickEffect(this); checkForUpdates();" title="בדוק אם קיימת גרסה חדשה">
-            🔄 בדוק עדכון עכשיו
-        </button>
-        
         <!-- אינדיקטור שליטה קולית -->
         <div id="voiceIndicator" style="display: none; background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 8px 15px; border-radius: 20px; margin: 10px auto; text-align: center; font-size: 14px; font-weight: bold; animation: pulse 1.5s infinite; cursor: pointer; user-select: none;"
             onclick="toggleVoiceControl()">
@@ -817,8 +909,6 @@
             <input type="range" min="0" max="100" value="100" class="volume-slider" id="volumeSlider">
         </div>
 
-        <button class="back-btn" onclick="buttonClickEffect(this); goBack()">🔙 חזרה לתפריט הראשי</button>
-        
         <!-- הוסרו קיצורי מקלדת כדי לחסוך מקום במסך -->
     </div>
 
@@ -901,11 +991,6 @@
         let songShuffleHistory = [];
         let playlistShuffleQueue = [];
         let playlistShuffleHistory = [];
-        const LAST_PLAYBACK_KEY = 'carPlayer:lastPlayback';
-        const PLAYBACK_SAVE_INTERVAL_MS = 5000;
-        let pendingRestoreState = null;
-        let restoringPlayback = false;
-        let playbackStateInterval = null;
         let userRequestedStop = false; // ניגן יפסיק רק אם המשתמש ביקש זאת מפורשות
         let isDayMode = false; // מצב ברירת מחדל: מצב לילה
         let lastVolume = 100; // נוסיף משתנה לשמירת עוצמת הקול האחרונה
@@ -938,18 +1023,6 @@
         
         console.log(`🎵 נטענו ${playlists.length} פלייליסטים:`, playlists.map(p => p.name));
 
-        const savedPlaybackState = loadPlaybackState();
-        if (savedPlaybackState) {
-            pendingRestoreState = savedPlaybackState;
-            const restoredIndex = playlists.findIndex(p => p.id === savedPlaybackState.playlistId);
-            if (restoredIndex !== -1) {
-                currentPlaylistIndex = restoredIndex;
-                console.log(`🔁 שחזור שיר אחרון מהפלייליסט: ${playlists[restoredIndex].name}`);
-            } else {
-                console.warn('ℹ️ פלייליסט השיר האחרון לא נמצא - מנגן מהפלייליסט הנוכחי');
-            }
-        }
-        
         // שמירת פלייליסטים ב-LocalStorage
         function savePlaylists() {
             localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
@@ -1004,115 +1077,6 @@
                 console.warn('⚠️ לא ניתן לקבל מזהה וידאו נוכחי:', err);
             }
             return null;
-        }
-
-        function savePlaybackState() {
-            if (!player || typeof player.getPlayerState !== 'function') {
-                return;
-            }
-
-            const videoId = getCurrentVideoIdSafe();
-            if (!videoId) {
-                return;
-            }
-
-            let currentTime = 0;
-            try {
-                if (typeof player.getCurrentTime === 'function') {
-                    currentTime = Math.floor(player.getCurrentTime());
-                }
-            } catch (err) {
-                console.warn('⚠️ לא ניתן לקרוא את מיקום הזמן:', err);
-            }
-
-            const state = {
-                playlistId: playlists[currentPlaylistIndex]?.id,
-                playlistIndex: currentPlaylistIndex,
-                videoId,
-                time: currentTime,
-                updatedAt: Date.now()
-            };
-
-            try {
-                localStorage.setItem(LAST_PLAYBACK_KEY, JSON.stringify(state));
-                console.log('💾 נשמר מצב ניגון:', state);
-            } catch (err) {
-                console.warn('⚠️ לא ניתן לשמור מצב ניגון:', err);
-            }
-        }
-
-        function loadPlaybackState() {
-            try {
-                const raw = localStorage.getItem(LAST_PLAYBACK_KEY);
-                if (!raw) {
-                    return null;
-                }
-
-                const state = JSON.parse(raw);
-                if (!state || !state.playlistId || !state.videoId) {
-                    return null;
-                }
-
-                return state;
-            } catch (err) {
-                console.warn('⚠️ לא ניתן לטעון מצב ניגון אחרון:', err);
-                return null;
-            }
-        }
-
-        function startPlaybackStateTracking() {
-            if (playbackStateInterval !== null) {
-                return;
-            }
-            playbackStateInterval = setInterval(savePlaybackState, PLAYBACK_SAVE_INTERVAL_MS);
-        }
-
-        function stopPlaybackStateTracking() {
-            if (playbackStateInterval !== null) {
-                clearInterval(playbackStateInterval);
-                playbackStateInterval = null;
-            }
-            savePlaybackState();
-        }
-
-        function attemptRestorePlayback(retryCount = 0) {
-            if (!pendingRestoreState || !player) {
-                return;
-            }
-
-            const MAX_RETRIES = 10;
-            if (retryCount > MAX_RETRIES) {
-                console.warn('⚠️ לא ניתן לשחזר את השיר האחרון - מוותר לאחר ניסיונות מרובים');
-                pendingRestoreState = null;
-                restoringPlayback = false;
-                return;
-            }
-
-            const playlist = typeof player.getPlaylist === 'function' ? player.getPlaylist() : null;
-            if (!playlist || playlist.length === 0) {
-                setTimeout(() => attemptRestorePlayback(retryCount + 1), 500);
-                return;
-            }
-
-            const targetVideoId = pendingRestoreState.videoId;
-            const targetIndex = playlist.findIndex(id => id === targetVideoId);
-
-            restoringPlayback = true;
-            hasUserInteracted = true;
-            userRequestedStop = false;
-
-            if (targetIndex !== -1 && typeof player.playVideoAt === 'function') {
-                try {
-                    player.playVideoAt(targetIndex);
-                    return;
-                } catch (err) {
-                    console.warn('⚠️ לא ניתן לעבור ישירות לשיר האחרון:', err);
-                }
-            } else {
-                console.warn('ℹ️ השיר האחרון לא נמצא בפלייליסט - מתחיל מהשיר הנוכחי ברירת מחדל');
-            }
-
-            playVideo();
         }
 
         function updatePlayPauseButton(isPlaying) {
@@ -1625,7 +1589,6 @@
                 hasUserInteracted = true;
                 player.playVideo();
                 startAdDetection(); // הפעל זיהוי פרסומות
-                startPlaybackStateTracking();
                 
                 // אתחל background audio למקרה של מעבר לרקע
                 const backgroundAudio = document.getElementById('backgroundAudio');
@@ -1649,7 +1612,6 @@
             if (player && player.pauseVideo) {
                 player.pauseVideo();
                 stopAdDetection();
-                stopPlaybackStateTracking();
                 updatePlayPauseButton(false);
             }
         }
@@ -1685,7 +1647,6 @@
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
-                    setTimeout(() => savePlaybackState(), 1000);
                 }, 400);
             }
         }
@@ -1706,7 +1667,6 @@
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
-                    setTimeout(() => savePlaybackState(), 1000);
                 }, 400);
             }
         }
@@ -1723,9 +1683,6 @@
             
             // טען את הנגן מחדש
             reloadPlayer();
-
-            // שמור מצב ניגון חדש לאחר החלפת פלייליסט
-            setTimeout(() => savePlaybackState(), 1200);
             
             // הוספת אפקט ויזואלי כדי שהמשתמש ידע שהפעולה התקבלה
             const playlistName = document.getElementById('playlistName');
@@ -1747,9 +1704,6 @@
             
             // טען את הנגן מחדש
             reloadPlayer();
-
-            // שמור מצב ניגון חדש לאחר החלפת פלייליסט
-            setTimeout(() => savePlaybackState(), 1200);
             
             // הוספת אפקט ויזואלי כדי שהמשתמש ידע שהפעולה התקבלה
             const playlistName = document.getElementById('playlistName');
@@ -1814,22 +1768,105 @@
                 navigator.vibrate(50);
             }
         }
+
+        function toggleSettingsMenu(event) {
+            const dropdown = document.getElementById('settingsDropdown');
+            const toggleBtn = document.getElementById('settingsToggleBtn');
+            if (!dropdown || !toggleBtn) {
+                return;
+            }
+
+            event.stopPropagation();
+
+            const isOpen = !dropdown.classList.contains('open');
+            if (isOpen) {
+                dropdown.classList.add('open');
+                dropdown.setAttribute('aria-hidden', 'false');
+                toggleBtn.setAttribute('aria-expanded', 'true');
+                document.addEventListener('click', handleSettingsOutsideClick);
+                document.addEventListener('keydown', handleSettingsKeydown);
+            } else {
+                closeSettingsMenu();
+            }
+        }
+
+        function closeSettingsMenu() {
+            const dropdown = document.getElementById('settingsDropdown');
+            const toggleBtn = document.getElementById('settingsToggleBtn');
+            if (!dropdown || !toggleBtn) {
+                return;
+            }
+
+            dropdown.classList.remove('open');
+            dropdown.setAttribute('aria-hidden', 'true');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+            document.removeEventListener('click', handleSettingsOutsideClick);
+            document.removeEventListener('keydown', handleSettingsKeydown);
+        }
+
+        function handleSettingsOutsideClick(event) {
+            const dropdown = document.getElementById('settingsDropdown');
+            const toggleBtn = document.getElementById('settingsToggleBtn');
+            if (!dropdown || !toggleBtn) {
+                return;
+            }
+
+            if (!dropdown.contains(event.target) && event.target !== toggleBtn) {
+                closeSettingsMenu();
+            }
+        }
+
+        function handleSettingsKeydown(event) {
+            if (event.key === 'Escape') {
+                closeSettingsMenu();
+            }
+        }
+
+        function handleDayNightToggle(button) {
+            buttonClickEffect(button);
+            toggleDayNightMode();
+            closeSettingsMenu();
+        }
+
+        function handleUpdateCheck(button) {
+            buttonClickEffect(button);
+            closeSettingsMenu();
+            checkForUpdates();
+        }
+
+        function handleGoBack(button) {
+            buttonClickEffect(button);
+            closeSettingsMenu();
+            goBack();
+        }
+
+        function updateDayNightSettingUI() {
+            const icon = document.getElementById('dayNightSettingIcon');
+            const label = document.getElementById('dayNightSettingLabel');
+            if (!icon || !label) {
+                return;
+            }
+
+            if (isDayMode) {
+                icon.textContent = '☀️';
+                label.textContent = 'הפעל מצב לילה';
+            } else {
+                icon.textContent = '🌙';
+                label.textContent = 'הפעל מצב יום';
+            }
+        }
         // פונקציה להחלפת מצב יום/לילה
         function toggleDayNightMode() {
             isDayMode = !isDayMode;
             const body = document.body;
-            const modeIcon = document.getElementById('mode-icon');
             
             if (isDayMode) {
                 body.classList.add('day-mode');
-                modeIcon.textContent = '\u2600\uFE0F'; // סמל שמש
             } else {
                 body.classList.remove('day-mode');
-                modeIcon.textContent = '\ud83c\udf19'; // סמל ירח
             }
             
-            // הפעלת אפקט לחיצה על המתג
-            buttonClickEffect(document.querySelector('.mode-switch'));
+            updateDayNightSettingUI();
         }
         
         // בדיקת זמן יום אוטומטית בטעינה
@@ -1843,6 +1880,7 @@
         
         // בדיקת זמן יום בטעינה
         window.addEventListener('load', checkDayTime);
+        window.addEventListener('load', updateDayNightSettingUI);
         
         // מניעת כיבוי מסך
         function preventScreenSleep() {
@@ -2115,11 +2153,9 @@
                     });
                     navigator.mediaSession.setActionHandler('previoustrack', () => {
                         previousTrack();
-                        setTimeout(() => savePlaybackState(), 1000);
                     });
                     navigator.mediaSession.setActionHandler('nexttrack', () => {
                         nextTrack();
-                        setTimeout(() => savePlaybackState(), 1000);
                     });
                     
                     // כפתורים נוספים למעבר בין פלייליסטים
@@ -2765,22 +2801,18 @@
 
         function voiceNextTrack() {
             nextTrack();
-            setTimeout(() => savePlaybackState(), 1000);
         }
 
         function voicePreviousTrack() {
             previousTrack();
-            setTimeout(() => savePlaybackState(), 1000);
         }
 
         function voiceNextPlaylist() {
             nextPlaylist();
-            setTimeout(() => savePlaybackState(), 1200);
         }
 
         function voicePreviousPlaylist() {
             previousPlaylist();
-            setTimeout(() => savePlaybackState(), 1200);
         }
 
         function voicePlay() {
