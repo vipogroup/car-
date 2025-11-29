@@ -168,6 +168,141 @@
             color: #fff;
         }
 
+        .microphone-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .microphone-modal {
+            background: linear-gradient(145deg, #1e1e1e, #2c2c2c);
+            border-radius: 18px;
+            border: 2px solid rgba(29, 185, 84, 0.35);
+            max-width: 420px;
+            width: 100%;
+            padding: 25px;
+            color: #fff;
+            position: relative;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+            text-align: right;
+        }
+
+        .microphone-modal h2 {
+            margin: 0 0 15px;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .microphone-modal p {
+            font-size: 15px;
+            line-height: 1.6;
+            margin: 0 0 15px;
+        }
+
+        .microphone-modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .microphone-modal-primary,
+        .microphone-modal-secondary {
+            border: none;
+            border-radius: 14px;
+            padding: 10px 16px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .microphone-modal-primary {
+            background: linear-gradient(135deg, #1db954, #0b7d3b);
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(29, 185, 84, 0.35);
+        }
+
+        .microphone-modal-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(29, 185, 84, 0.45);
+        }
+
+        .microphone-modal-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f1f1f1;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .microphone-modal-secondary:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .microphone-modal-close {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .microphone-settings-guide {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 15px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .microphone-settings-guide h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #1db954;
+        }
+
+        .microphone-settings-guide ul {
+            margin: 0 0 10px 0;
+            padding-right: 18px;
+        }
+
+        .microphone-settings-guide li {
+            margin-bottom: 6px;
+        }
+
+        .microphone-retry-status {
+            font-size: 14px;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .microphone-modal {
+                padding: 20px 18px;
+            }
+
+            .microphone-modal h2 {
+                font-size: 20px;
+            }
+
+            .microphone-modal-primary,
+            .microphone-modal-secondary {
+                flex: 1;
+                text-align: center;
+            }
+        }
+
         .shuffle-btn.active {
             background: #0b6838 !important;
             box-shadow: 0 0 12px #0b6838;
@@ -687,6 +822,30 @@
         <!-- הוסרו קיצורי מקלדת כדי לחסוך מקום במסך -->
     </div>
 
+    <!-- מודאל פתרון בעיות הרשאת מיקרופון -->
+    <div id="microphoneHelpModal" class="microphone-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="microphoneHelpTitle">
+        <div class="microphone-modal">
+            <button class="microphone-modal-close" aria-label="סגור" onclick="closeMicrophoneHelp()">✖</button>
+            <h2 id="microphoneHelpTitle">🎤 נדרשת הרשאת מיקרופון</h2>
+            <p>
+                כדי להשתמש בשליטה הקולית, עליך לאפשר גישה למיקרופון. בחר באחת האפשרויות:
+            </p>
+            <div class="microphone-modal-actions">
+                <button class="microphone-modal-primary" onclick="retryMicrophonePermission()">🔁 נסה שוב עכשיו</button>
+                <button class="microphone-modal-secondary" onclick="openMicrophoneSettingsGuide()">📘 הוראות פתיחה בהגדרות</button>
+            </div>
+            <div class="microphone-retry-status" id="microphoneRetryStatus"></div>
+            <div class="microphone-settings-guide" id="microphoneSettingsGuide" style="display: none;">
+                <h3>📱 איך לפתוח הרשאה ידנית?</h3>
+                <ul>
+                    <li><strong>Chrome / Android:</strong> הקש על סמל המנעול ▶️ Permissions ▶️ Microphone ▶️ Allow.</li>
+                    <li><strong>Safari / iPhone:</strong> הגדרות ▶️ Safari ▶️ מצלמה ומיקרופון ▶️ אפשר.</li>
+                    <li>לאחר העדכון רענן את האפליקציה וחזור לכאן.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <!-- מודאל ניהול פלייליסטים -->
     <div id="playlistModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; overflow-y: auto;">
         <div style="max-width: 500px; margin: 20px auto; background: #333; padding: 20px; border-radius: 15px; border: 2px solid #1db954;">
@@ -968,6 +1127,61 @@
                 btn.textContent = '▶';
                 btn.title = 'נגן';
                 btn.setAttribute('aria-label', 'נגן');
+            }
+        }
+
+        function toggleMicrophoneHelp(show) {
+            const modal = document.getElementById('microphoneHelpModal');
+            if (!modal) return;
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        function openMicrophoneSettingsGuide() {
+            const guide = document.getElementById('microphoneSettingsGuide');
+            const status = document.getElementById('microphoneRetryStatus');
+            if (guide) {
+                guide.style.display = 'block';
+            }
+            if (status) {
+                status.textContent = 'פתח את ההגדרות לפי ההנחיות ולאחר מכן רענן את האפליקציה.';
+            }
+        }
+
+        function closeMicrophoneHelp() {
+            toggleMicrophoneHelp(false);
+            const status = document.getElementById('microphoneRetryStatus');
+            const guide = document.getElementById('microphoneSettingsGuide');
+            if (status) {
+                status.textContent = '';
+            }
+            if (guide) {
+                guide.style.display = 'none';
+            }
+        }
+
+        async function retryMicrophonePermission() {
+            const status = document.getElementById('microphoneRetryStatus');
+            if (status) {
+                status.textContent = 'מבקש הרשאה...';
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop());
+                if (status) {
+                    status.textContent = '✅ ההרשאה ניתנה! השליטה הקולית הופעלה.';
+                }
+                closeMicrophoneHelp();
+                setTimeout(() => {
+                    initVoiceRecognition();
+                    voiceControlEnabled = true;
+                    updateVoiceIndicator();
+                }, 500);
+            } catch (error) {
+                if (status) {
+                    status.textContent = '❌ עדיין חסומה. נא לפתוח ידנית דרך ההגדרות.';
+                }
+                openMicrophoneSettingsGuide();
             }
         }
 
@@ -2519,6 +2733,114 @@
         let isVoiceActive = false;
         let voiceControlEnabled = false;
         let voiceRecognitionInitialized = false;
+        const VOICE_COMMAND_COOLDOWN_MS = 1200;
+        const VOICE_RESTART_DELAY_MS = 350;
+        let lastVoiceCommandTime = 0;
+        let voiceCommandInProgress = false;
+        let voiceRestartTimeout = null;
+        let lastRecognizedCommand = '';
+        let voiceCommandDefinitions = [];
+
+        function showVoiceCommandFeedback(message) {
+            const commandDiv = document.getElementById('voiceCommand');
+            if (!commandDiv) return;
+            commandDiv.textContent = message;
+            commandDiv.style.display = 'block';
+            setTimeout(() => {
+                commandDiv.style.display = 'none';
+            }, 2000);
+        }
+
+        function scheduleVoiceRecognitionRestart() {
+            if (!voiceControlEnabled || !recognition) {
+                return;
+            }
+            if (voiceRestartTimeout) {
+                clearTimeout(voiceRestartTimeout);
+            }
+            voiceRestartTimeout = setTimeout(() => {
+                startVoiceRecognition();
+            }, VOICE_RESTART_DELAY_MS);
+        }
+
+        function voiceNextTrack() {
+            nextTrack();
+            setTimeout(() => savePlaybackState(), 1000);
+        }
+
+        function voicePreviousTrack() {
+            previousTrack();
+            setTimeout(() => savePlaybackState(), 1000);
+        }
+
+        function voiceNextPlaylist() {
+            nextPlaylist();
+            setTimeout(() => savePlaybackState(), 1200);
+        }
+
+        function voicePreviousPlaylist() {
+            previousPlaylist();
+            setTimeout(() => savePlaybackState(), 1200);
+        }
+
+        function voicePlay() {
+            playVideo(true);
+        }
+
+        function voicePause() {
+            pauseVideo(true);
+        }
+
+        function voiceToggleMute() {
+            toggleMute();
+        }
+
+        function handleVoiceCommand(definition) {
+            const now = Date.now();
+            if (voiceCommandInProgress) {
+                console.log('🎤 פקודה קולית קודמת עדיין בתהליך – מתעלם כדי למנוע כפילויות');
+                return false;
+            }
+            if (definition.id === lastRecognizedCommand && (now - lastVoiceCommandTime) < VOICE_COMMAND_COOLDOWN_MS) {
+                console.log('🎤 הפקודה הקולית התקבלה שוב מהר מדי – מתעלם');
+                return false;
+            }
+
+            voiceCommandInProgress = true;
+            lastVoiceCommandTime = now;
+            lastRecognizedCommand = definition.id;
+
+            try {
+                definition.action();
+                showVoiceCommandFeedback(`✅ ${definition.label}`);
+            } catch (err) {
+                console.error('❌ שגיאה בביצוע פקודת קול:', err);
+                showVoiceCommandFeedback('❌ פעולה נכשלה');
+            }
+
+            if (recognition) {
+                try {
+                    recognition.stop();
+                } catch (err) {
+                    console.warn('⚠️ ניסיון לעצור זיהוי קולי בעת עיבוד פקודה נכשל:', err);
+                }
+            }
+
+            setTimeout(() => {
+                voiceCommandInProgress = false;
+            }, Math.max(VOICE_RESTART_DELAY_MS + 150, 400));
+
+            scheduleVoiceRecognitionRestart();
+
+            return true;
+        }
+
+        function normaliseTranscript(text) {
+            return text
+                .toLowerCase()
+                .replace(/[.,!?"׳״']/g, '')
+                .trim();
+        }
 
         function updateVoiceIndicator() {
             const indicator = document.getElementById('voiceIndicator');
@@ -2552,6 +2874,10 @@
         function startVoiceRecognition() {
             if (!recognition) return;
             try {
+                if (voiceRestartTimeout) {
+                    clearTimeout(voiceRestartTimeout);
+                    voiceRestartTimeout = null;
+                }
                 recognition.start();
             } catch (err) {
                 if (err.name === 'InvalidStateError') {
@@ -2612,80 +2938,44 @@
             updateVoiceIndicator();
 
             // מילון פקודות
-            const commands = {
-                // שיר הבא
-                'next': () => { nextTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר הבא'; },
-                'הבא': () => { nextTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר הבא'; },
-                'שיר הבא': () => { nextTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר הבא'; },
-                'next song': () => { nextTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר הבא'; },
-                
-                // שיר קודם
-                'previous': () => { previousTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר קודם'; },
-                'קודם': () => { previousTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר קודם'; },
-                'שיר קודם': () => { previousTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר קודם'; },
-                'previous song': () => { previousTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר קודם'; },
-                
-                // נגן
-                'play': () => { playVideo(true); return 'מנגן'; },
-                'נגן': () => { playVideo(true); return 'מנגן'; },
-                'תנגן': () => { playVideo(true); return 'מנגן'; },
-                
-                // עצור
-                'pause': () => { pauseVideo(true); return 'עצור'; },
-                'stop': () => { pauseVideo(true); return 'עצור'; },
-                'עצור': () => { pauseVideo(true); return 'עצור'; },
-                'תעצור': () => { pauseVideo(true); return 'עצור'; },
-                
-                // השתק
-                'mute': () => { toggleMute(); return 'השתק'; },
-                'השתק': () => { toggleMute(); return 'השתק'; },
-                'שקט': () => { toggleMute(); return 'השתק'; },
-                'השתק מוזיקה': () => { toggleMute(); return 'השתק'; },
-                
-                // פלייליסט הבא
-                'next playlist': () => { nextPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט הבא'; },
-                'פלייליסט הבא': () => { nextPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט הבא'; },
-                'עבור פלייליסט': () => { nextPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט הבא'; },
-                
-                // פלייליסט קודם
-                'previous playlist': () => { previousPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט קודם'; },
-                'פלייליסט קודם': () => { previousPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט קודם'; }
-            };
+            voiceCommandDefinitions = [
+                { id: 'next-track', label: 'שיר הבא', phrases: ['next', 'הבא', 'שיר הבא', 'next song', 'הבא שיר'], action: voiceNextTrack },
+                { id: 'previous-track', label: 'שיר קודם', phrases: ['previous', 'קודם', 'שיר קודם', 'previous song', 'חזור'], action: voicePreviousTrack },
+                { id: 'play', label: 'מנגן', phrases: ['play', 'נגן', 'תנגן', 'תפעיל', 'הפעל'], action: voicePlay },
+                { id: 'pause', label: 'עצור', phrases: ['pause', 'stop', 'עצור', 'תעצור', 'עצירה', 'הפסק'], action: voicePause },
+                { id: 'mute', label: 'השתק', phrases: ['mute', 'השתק', 'שקט', 'השתק מוזיקה'], action: voiceToggleMute },
+                { id: 'next-playlist', label: 'פלייליסט הבא', phrases: ['next playlist', 'פלייליסט הבא', 'עבור פלייליסט', 'פלייליסט קדימה'], action: voiceNextPlaylist },
+                { id: 'previous-playlist', label: 'פלייליסט קודם', phrases: ['previous playlist', 'פלייליסט קודם', 'חזור פלייליסט', 'פלייליסט אחורה'], action: voicePreviousPlaylist }
+            ];
 
             recognition.onstart = () => {
                 isVoiceActive = true;
                 voiceControlEnabled = true;
+                if (voiceRestartTimeout) {
+                    clearTimeout(voiceRestartTimeout);
+                    voiceRestartTimeout = null;
+                }
                 updateVoiceIndicator();
                 console.log('🎤 זיהוי קולי הופעל - מאזין...');
             };
 
             recognition.onresult = (event) => {
                 const last = event.results.length - 1;
-                const transcript = event.results[last][0].transcript.toLowerCase().trim();
+                const transcriptRaw = event.results[last][0].transcript;
+                const transcript = normaliseTranscript(transcriptRaw);
                 
                 console.log('🎤 זוהה:', transcript);
                 
                 // חיפוש פקודה מתאימה
                 let commandExecuted = false;
-                for (const [command, action] of Object.entries(commands)) {
-                    if (transcript.includes(command)) {
-                        const actionName = action();
-                        console.log(`✅ מבצע פקודה: ${actionName}`);
-                        
-                        // הצג משוב ויזואלי
-                        const commandDiv = document.getElementById('voiceCommand');
-                        commandDiv.textContent = `✅ ${actionName}`;
-                        commandDiv.style.display = 'block';
-                        
-                        setTimeout(() => {
-                            commandDiv.style.display = 'none';
-                        }, 2000);
-                        
-                        commandExecuted = true;
+                for (const definition of voiceCommandDefinitions) {
+                    if (definition.phrases.some(phrase => transcript.includes(phrase))) {
+                        console.log(`✅ פקודה קולית מזוהה: ${definition.label}`);
+                        commandExecuted = handleVoiceCommand(definition);
                         break;
                     }
                 }
-                
+
                 if (!commandExecuted) {
                     console.log('❓ פקודה לא זוהתה:', transcript);
                 }
@@ -2709,10 +2999,8 @@
                 updateVoiceIndicator();
 
                 if (voiceControlEnabled) {
-                    console.log('🔄 זיהוי קולי הסתיים - מפעיל מחדש...');
-                    setTimeout(() => {
-                        startVoiceRecognition();
-                    }, 800);
+                    console.log('🔄 זיהוי קולי הסתיים - מתזמן הפעלה מחדש...');
+                    scheduleVoiceRecognitionRestart();
                 } else {
                     console.log('🎤 שליטה קולית כבויה - לא מאתחל מחדש');
                 }
