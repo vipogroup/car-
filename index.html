@@ -413,6 +413,7 @@
                 height: 25vh;
             }
         }
+
         @media (max-width: 768px) {
             .control-btn.icon-btn,
             .control-btn.pill-btn {
@@ -741,6 +742,11 @@
         let songShuffleHistory = [];
         let playlistShuffleQueue = [];
         let playlistShuffleHistory = [];
+        const LAST_PLAYBACK_KEY = 'carPlayer:lastPlayback';
+        const PLAYBACK_SAVE_INTERVAL_MS = 5000;
+        let pendingRestoreState = null;
+        let restoringPlayback = false;
+        let playbackStateInterval = null;
         let userRequestedStop = false; // ניגן יפסיק רק אם המשתמש ביקש זאת מפורשות
         let isDayMode = false; // מצב ברירת מחדל: מצב לילה
         let lastVolume = 100; // נוסיף משתנה לשמירת עוצמת הקול האחרונה
@@ -772,6 +778,18 @@
         }
         
         console.log(`🎵 נטענו ${playlists.length} פלייליסטים:`, playlists.map(p => p.name));
+
+        const savedPlaybackState = loadPlaybackState();
+        if (savedPlaybackState) {
+            pendingRestoreState = savedPlaybackState;
+            const restoredIndex = playlists.findIndex(p => p.id === savedPlaybackState.playlistId);
+            if (restoredIndex !== -1) {
+                currentPlaylistIndex = restoredIndex;
+                console.log(`🔁 שחזור שיר אחרון מהפלייליסט: ${playlists[restoredIndex].name}`);
+            } else {
+                console.warn('ℹ️ פלייליסט השיר האחרון לא נמצא - מנגן מהפלייליסט הנוכחי');
+            }
+        }
         
         // שמירת פלייליסטים ב-LocalStorage
         function savePlaylists() {
@@ -815,6 +833,127 @@
                 playlistBtn.title = playlistTitle;
                 playlistBtn.setAttribute('aria-label', playlistTitle);
             }
+        }
+
+        function getCurrentVideoIdSafe() {
+            try {
+                if (player && typeof player.getVideoData === 'function') {
+                    const data = player.getVideoData();
+                    return data && data.video_id ? data.video_id : null;
+                }
+            } catch (err) {
+                console.warn('⚠️ לא ניתן לקבל מזהה וידאו נוכחי:', err);
+            }
+            return null;
+        }
+
+        function savePlaybackState() {
+            if (!player || typeof player.getPlayerState !== 'function') {
+                return;
+            }
+
+            const videoId = getCurrentVideoIdSafe();
+            if (!videoId) {
+                return;
+            }
+
+            let currentTime = 0;
+            try {
+                if (typeof player.getCurrentTime === 'function') {
+                    currentTime = Math.floor(player.getCurrentTime());
+                }
+            } catch (err) {
+                console.warn('⚠️ לא ניתן לקרוא את מיקום הזמן:', err);
+            }
+
+            const state = {
+                playlistId: playlists[currentPlaylistIndex]?.id,
+                playlistIndex: currentPlaylistIndex,
+                videoId,
+                time: currentTime,
+                updatedAt: Date.now()
+            };
+
+            try {
+                localStorage.setItem(LAST_PLAYBACK_KEY, JSON.stringify(state));
+                console.log('💾 נשמר מצב ניגון:', state);
+            } catch (err) {
+                console.warn('⚠️ לא ניתן לשמור מצב ניגון:', err);
+            }
+        }
+
+        function loadPlaybackState() {
+            try {
+                const raw = localStorage.getItem(LAST_PLAYBACK_KEY);
+                if (!raw) {
+                    return null;
+                }
+
+                const state = JSON.parse(raw);
+                if (!state || !state.playlistId || !state.videoId) {
+                    return null;
+                }
+
+                return state;
+            } catch (err) {
+                console.warn('⚠️ לא ניתן לטעון מצב ניגון אחרון:', err);
+                return null;
+            }
+        }
+
+        function startPlaybackStateTracking() {
+            if (playbackStateInterval !== null) {
+                return;
+            }
+            playbackStateInterval = setInterval(savePlaybackState, PLAYBACK_SAVE_INTERVAL_MS);
+        }
+
+        function stopPlaybackStateTracking() {
+            if (playbackStateInterval !== null) {
+                clearInterval(playbackStateInterval);
+                playbackStateInterval = null;
+            }
+            savePlaybackState();
+        }
+
+        function attemptRestorePlayback(retryCount = 0) {
+            if (!pendingRestoreState || !player) {
+                return;
+            }
+
+            const MAX_RETRIES = 10;
+            if (retryCount > MAX_RETRIES) {
+                console.warn('⚠️ לא ניתן לשחזר את השיר האחרון - מוותר לאחר ניסיונות מרובים');
+                pendingRestoreState = null;
+                restoringPlayback = false;
+                return;
+            }
+
+            const playlist = typeof player.getPlaylist === 'function' ? player.getPlaylist() : null;
+            if (!playlist || playlist.length === 0) {
+                setTimeout(() => attemptRestorePlayback(retryCount + 1), 500);
+                return;
+            }
+
+            const targetVideoId = pendingRestoreState.videoId;
+            const targetIndex = playlist.findIndex(id => id === targetVideoId);
+
+            restoringPlayback = true;
+            hasUserInteracted = true;
+            userRequestedStop = false;
+
+            if (targetIndex !== -1 && typeof player.playVideoAt === 'function') {
+                try {
+                    player.playVideoAt(targetIndex);
+                    return;
+                } catch (err) {
+                    console.warn('⚠️ לא ניתן לעבור ישירות לשיר האחרון:', err);
+                }
+            } else {
+                console.warn('ℹ️ השיר האחרון לא נמצא בפלייליסט - מתחיל מהשיר הנוכחי ברירת מחדל');
+            }
+
+            playVideo();
         }
 
         function updatePlayPauseButton(isPlaying) {
@@ -1185,6 +1324,11 @@
                         }
                         updatePlayPauseButton(false);
                         updateShuffleButtons();
+
+                        if (pendingRestoreState && !restoringPlayback) {
+                            console.log('🔁 מנסה לשחזר את השיר האחרון...');
+                            setTimeout(() => attemptRestorePlayback(), 500);
+                        }
                     },
                     'onStateChange': (event) => {
                         // עדכון שם השיר כאשר השיר משתנה
@@ -1192,6 +1336,20 @@
                             userRequestedStop = false;
                             updateCurrentSong();
                             updatePlayPauseButton(true);
+                            startPlaybackStateTracking();
+                            if (restoringPlayback && pendingRestoreState) {
+                                const targetTime = pendingRestoreState.time || 0;
+                                if (typeof player.seekTo === 'function') {
+                                    console.log(`⏱️ משחזר מיקום ${targetTime} שניות`);
+                                    try {
+                                        player.seekTo(targetTime, true);
+                                    } catch (err) {
+                                        console.warn('⚠️ לא ניתן לשחזר מיקום בזמן:', err);
+                                    }
+                                }
+                                pendingRestoreState = null;
+                                restoringPlayback = false;
+                            }
                         } else if (event.data === YT.PlayerState.PAUSED) {
                             updatePlayPauseButton(false);
 
@@ -1214,6 +1372,7 @@
                                     }
                                 }, 300);
                             }
+                            stopPlaybackStateTracking();
                         }
                     },
                     'onError': handlePlayerError
@@ -1252,6 +1411,7 @@
                 hasUserInteracted = true;
                 player.playVideo();
                 startAdDetection(); // הפעל זיהוי פרסומות
+                startPlaybackStateTracking();
                 
                 // אתחל background audio למקרה של מעבר לרקע
                 const backgroundAudio = document.getElementById('backgroundAudio');
@@ -1275,6 +1435,7 @@
             if (player && player.pauseVideo) {
                 player.pauseVideo();
                 stopAdDetection();
+                stopPlaybackStateTracking();
                 updatePlayPauseButton(false);
             }
         }
@@ -1310,6 +1471,7 @@
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
+                    setTimeout(() => savePlaybackState(), 1000);
                 }, 400);
             }
         }
@@ -1330,6 +1492,7 @@
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
+                    setTimeout(() => savePlaybackState(), 1000);
                 }, 400);
             }
         }
@@ -1346,6 +1509,9 @@
             
             // טען את הנגן מחדש
             reloadPlayer();
+
+            // שמור מצב ניגון חדש לאחר החלפת פלייליסט
+            setTimeout(() => savePlaybackState(), 1200);
             
             // הוספת אפקט ויזואלי כדי שהמשתמש ידע שהפעולה התקבלה
             const playlistName = document.getElementById('playlistName');
@@ -1367,6 +1533,9 @@
             
             // טען את הנגן מחדש
             reloadPlayer();
+
+            // שמור מצב ניגון חדש לאחר החלפת פלייליסט
+            setTimeout(() => savePlaybackState(), 1200);
             
             // הוספת אפקט ויזואלי כדי שהמשתמש ידע שהפעולה התקבלה
             const playlistName = document.getElementById('playlistName');
@@ -1732,9 +1901,11 @@
                     });
                     navigator.mediaSession.setActionHandler('previoustrack', () => {
                         previousTrack();
+                        setTimeout(() => savePlaybackState(), 1000);
                     });
                     navigator.mediaSession.setActionHandler('nexttrack', () => {
                         nextTrack();
+                        setTimeout(() => savePlaybackState(), 1000);
                     });
                     
                     // כפתורים נוספים למעבר בין פלייליסטים
@@ -2443,16 +2614,16 @@
             // מילון פקודות
             const commands = {
                 // שיר הבא
-                'next': () => { nextTrack(); return 'שיר הבא'; },
-                'הבא': () => { nextTrack(); return 'שיר הבא'; },
-                'שיר הבא': () => { nextTrack(); return 'שיר הבא'; },
-                'next song': () => { nextTrack(); return 'שיר הבא'; },
+                'next': () => { nextTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר הבא'; },
+                'הבא': () => { nextTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר הבא'; },
+                'שיר הבא': () => { nextTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר הבא'; },
+                'next song': () => { nextTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר הבא'; },
                 
                 // שיר קודם
-                'previous': () => { previousTrack(); return 'שיר קודם'; },
-                'קודם': () => { previousTrack(); return 'שיר קודם'; },
-                'שיר קודם': () => { previousTrack(); return 'שיר קודם'; },
-                'previous song': () => { previousTrack(); return 'שיר קודם'; },
+                'previous': () => { previousTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר קודם'; },
+                'קודם': () => { previousTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר קודם'; },
+                'שיר קודם': () => { previousTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר קודם'; },
+                'previous song': () => { previousTrack(); setTimeout(() => savePlaybackState(), 1000); return 'שיר קודם'; },
                 
                 // נגן
                 'play': () => { playVideo(true); return 'מנגן'; },
@@ -2472,13 +2643,13 @@
                 'השתק מוזיקה': () => { toggleMute(); return 'השתק'; },
                 
                 // פלייליסט הבא
-                'next playlist': () => { nextPlaylist(); return 'פלייליסט הבא'; },
-                'פלייליסט הבא': () => { nextPlaylist(); return 'פלייליסט הבא'; },
-                'עבור פלייליסט': () => { nextPlaylist(); return 'פלייליסט הבא'; },
+                'next playlist': () => { nextPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט הבא'; },
+                'פלייליסט הבא': () => { nextPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט הבא'; },
+                'עבור פלייליסט': () => { nextPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט הבא'; },
                 
                 // פלייליסט קודם
-                'previous playlist': () => { previousPlaylist(); return 'פלייליסט קודם'; },
-                'פלייליסט קודם': () => { previousPlaylist(); return 'פלייליסט קודם'; }
+                'previous playlist': () => { previousPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט קודם'; },
+                'פלייליסט קודם': () => { previousPlaylist(); setTimeout(() => savePlaybackState(), 1200); return 'פלייליסט קודם'; }
             };
 
             recognition.onstart = () => {
