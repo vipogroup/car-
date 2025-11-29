@@ -74,37 +74,60 @@
             display: block;
         }
 
-        .control-buttons {
-            display: flex !important;
-            justify-content: center;
-            gap: 5px;
-            margin: 5px 0;
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             width: 100%;
+            margin: 12px 0;
+        }
+
+        .control-row,
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
             flex-wrap: wrap;
+            width: 100%;
         }
 
         .control-btn {
             background: #1db954;
             color: white;
             border: none;
-            padding: 8px;
-            border-radius: 10px;
-            font-size: 18px;
+            border-radius: 14px;
             cursor: pointer;
-            transition: 0.2s;
-            min-width: 40px;
-            min-height: 40px;
-            margin: 2px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transition: 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .control-btn.icon-btn {
+            width: 58px;
+            height: 58px;
+            font-size: 28px;
+            padding: 0;
+        }
+
+        .control-btn.pill-btn {
+            padding: 12px 18px;
+            font-size: 16px;
+            min-width: 150px;
+            gap: 6px;
         }
 
         .control-btn:hover {
             background: #17a450;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
         }
 
         .shuffle-btn.active {
             background: #0b6838 !important;
-            box-shadow: 0 0 10px #0b6838;
+            box-shadow: 0 0 12px #0b6838;
         }
 
         .playlist-name {
@@ -146,7 +169,7 @@
         }
         
         /* בעיית תצוגה - תיקון אלמנטים שלא מוצגים */
-        .control-buttons, .playlist-name, .current-song-container, .volume-control {
+        .playlist-name, .current-song-container, .volume-control {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
@@ -348,13 +371,18 @@
             }
         }
         @media (max-width: 768px) {
-            .control-btn {
-                padding: 12px 20px;
-                font-size: 20px;
-                min-width: 60px;
-                min-height: 60px;
+            .control-btn.icon-btn {
+                width: 52px;
+                height: 52px;
+                font-size: 24px;
             }
-            
+
+            .control-btn.pill-btn {
+                min-width: 130px;
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+
             .mode-switch {
                 top: 10px;
                 right: 10px;
@@ -566,11 +594,20 @@
         <h2 style="font-size: 22px; margin: 5px 0;">🎶 נגן מוזיקה לרכב 🚗</h2>
         <div id="player" class="video-frame"></div>
 
-        <div class="control-buttons">
-            <button class="control-btn" onclick="buttonClickEffect(this); previousTrack()">⏮</button>
-            <button class="control-btn" onclick="buttonClickEffect(this); playVideo()">▶</button>
-            <button class="control-btn" onclick="buttonClickEffect(this); pauseVideo()">⏸</button>
-            <button class="control-btn" onclick="buttonClickEffect(this); nextTrack()">⏭</button>
+        <div class="control-panel">
+            <div class="control-buttons top-controls">
+                <button class="control-btn icon-btn" title="שיר קודם" aria-label="שיר קודם" onclick="buttonClickEffect(this); previousTrack()">⏮</button>
+                <button class="control-btn icon-btn" id="playPauseBtn" title="נגן" aria-label="נגן" onclick="buttonClickEffect(this); togglePlayPause(this)">▶</button>
+                <button class="control-btn icon-btn" title="שיר הבא" aria-label="שיר הבא" onclick="buttonClickEffect(this); nextTrack()">⏭</button>
+                <button class="control-btn icon-btn shuffle-btn" id="songShuffleBtn" title="ערבוב שירים" aria-label="ערבוב שירים" onclick="buttonClickEffect(this); toggleSongShuffle()">🔀</button>
+                <button class="control-btn icon-btn shuffle-btn" id="playlistShuffleBtn" title="ערבוב פלייליסטים" aria-label="ערבוב פלייליסטים" onclick="buttonClickEffect(this); togglePlaylistShuffle()">🔁</button>
+            </div>
+
+            <div class="control-buttons playlist-controls">
+                <button class="control-btn pill-btn" id="prevPlaylistBtn" style="display: none;" onclick="buttonClickEffect(this); previousPlaylist()">⏪ פלייליסט קודם</button>
+                <button class="control-btn pill-btn" onclick="buttonClickEffect(this); openPlaylistManager()">📜 רשימת פלייליסטים</button>
+                <button class="control-btn pill-btn" id="nextPlaylistBtn" style="display: none;" onclick="buttonClickEffect(this); nextPlaylist()">פלייליסט הבא ⏩</button>
+            </div>
         </div>
 
         <div class="playlist-name" id="playlistName">🎵 פלייליסט ראשי - נהיגה בכיף 🚗</div>
@@ -583,19 +620,6 @@
             ✅ פקודה זוהתה
         </div>
         
-        <!-- כפתורי ניהול פלייליסטים -->
-        <div class="control-buttons" style="margin-top: 10px;">
-            <button class="control-btn" onclick="buttonClickEffect(this); previousPlaylist()" id="prevPlaylistBtn" style="display: none;">⏮️ פלייליסט קודם</button>
-            <button class="control-btn" onclick="buttonClickEffect(this); openPlaylistManager()">⚙️ ניהול פלייליסטים</button>
-            <button class="control-btn" onclick="buttonClickEffect(this); nextPlaylist()" id="nextPlaylistBtn" style="display: none;">פלייליסט הבא ⏭️</button>
-        </div>
-
-        <!-- כפתורי ערבוב -->
-        <div class="control-buttons" style="margin-top: 10px;">
-            <button class="control-btn shuffle-btn" id="songShuffleBtn" onclick="buttonClickEffect(this); toggleSongShuffle()">🔀 ערבוב שירים</button>
-            <button class="control-btn shuffle-btn" id="playlistShuffleBtn" onclick="buttonClickEffect(this); togglePlaylistShuffle()">🔁 ערבוב פלייליסטים</button>
-        </div>
-
         <!-- תצוגת שיר נוכחי -->
         <div class="current-song-container" id="currentSongContainer">
             <div class="current-song-label">שיר נוכחי:</div>
@@ -725,13 +749,32 @@
             const songBtn = document.getElementById('songShuffleBtn');
             if (songBtn) {
                 songBtn.classList.toggle('active', songShuffleEnabled);
-                songBtn.textContent = songShuffleEnabled ? '🔀 ערבוב שירים פעיל' : '🔀 ערבוב שירים';
+                const songTitle = songShuffleEnabled ? 'ערבוב שירים פעיל' : 'ערבוב שירים';
+                songBtn.title = songTitle;
+                songBtn.setAttribute('aria-label', songTitle);
             }
 
             const playlistBtn = document.getElementById('playlistShuffleBtn');
             if (playlistBtn) {
                 playlistBtn.classList.toggle('active', playlistShuffleEnabled);
-                playlistBtn.textContent = playlistShuffleEnabled ? '🔁 ערבוב פלייליסטים פעיל' : '🔁 ערבוב פלייליסטים';
+                const playlistTitle = playlistShuffleEnabled ? 'ערבוב פלייליסטים פעיל' : 'ערבוב פלייליסטים';
+                playlistBtn.title = playlistTitle;
+                playlistBtn.setAttribute('aria-label', playlistTitle);
+            }
+        }
+
+        function updatePlayPauseButton(isPlaying) {
+            const btn = document.getElementById('playPauseBtn');
+            if (!btn) return;
+
+            if (isPlaying) {
+                btn.textContent = '⏸';
+                btn.title = 'עצור';
+                btn.setAttribute('aria-label', 'עצור');
+            } else {
+                btn.textContent = '▶';
+                btn.title = 'נגן';
+                btn.setAttribute('aria-label', 'נגן');
             }
         }
 
@@ -1086,12 +1129,16 @@
                                 console.warn('⚠️ לא ניתן להפעיל מצב ערבוב בעת טעינת הנגן:', err);
                             }
                         }
+                        updatePlayPauseButton(false);
                         updateShuffleButtons();
                     },
                     'onStateChange': (event) => {
                         // עדכון שם השיר כאשר השיר משתנה
                         if (event.data === YT.PlayerState.PLAYING) {
                             updateCurrentSong();
+                            updatePlayPauseButton(true);
+                        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                            updatePlayPauseButton(false);
                         }
                     },
                     'onError': handlePlayerError
@@ -1132,6 +1179,7 @@
                     backgroundAudio.play().catch(e => console.log('Silent audio init:', e));
                     console.log('🔇 Background audio initialized (silent)');
                 }
+                updatePlayPauseButton(true);
             }
         }
 
@@ -1139,6 +1187,22 @@
             if (player && player.pauseVideo) {
                 player.pauseVideo();
                 stopAdDetection();
+                updatePlayPauseButton(false);
+            }
+        }
+
+        function togglePlayPause(btn) {
+            if (!player || typeof player.getPlayerState !== 'function') {
+                playVideo();
+                return;
+            }
+
+            const state = player.getPlayerState();
+            // YT.PlayerState.PLAYING === 1, PAUSED === 2, BUFFERING === 3, UNSTARTED === -1, ENDED === 0
+            if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING) {
+                pauseVideo();
+            } else {
+                playVideo();
             }
         }
 
