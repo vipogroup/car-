@@ -1645,6 +1645,16 @@
 
         // הפעל מחדש את מנגנון זיהוי הפרסומות לאחר שהמשתמש דילג ידנית על שיר
         function restartAdDetectionAfterManualSkip() {
+            // בדיקות מהירות ואגרסיביות מיד אחרי דילוג ידני
+            // פרסומות בדרך כלל מופיעות תוך 0-2 שניות אחרי מעבר שיר
+            const rapidChecks = [50, 150, 300, 500, 800, 1200, 1800, 2500];
+            
+            rapidChecks.forEach(delay => {
+                setTimeout(() => {
+                    aggressiveAdCheck();
+                }, delay);
+            });
+
             setTimeout(() => {
                 const shouldRestartViaPlay = player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING;
 
@@ -1653,12 +1663,85 @@
                 } else {
                     startAdDetection();
                 }
-
-                // בדיקה מיידית נוספת להאצת דילוג על פרסומות שמתנפלות אחרי דילוג ידני
-                setTimeout(() => {
-                    detectAndSkipAds();
-                }, 200);
             }, 350);
+        }
+
+        // בדיקת פרסומות אגרסיבית במיוחד - מדלג מיד על כל דבר חשוד
+        function aggressiveAdCheck() {
+            if (!player || !player.getDuration || !player.getPlayerState) return;
+            
+            try {
+                const playerState = player.getPlayerState();
+                if (playerState !== 1 && playerState !== 3) return; // רק אם מנגן או טוען
+                
+                const duration = player.getDuration();
+                let videoData = null;
+                let isLikelyAd = false;
+                
+                try {
+                    videoData = player.getVideoData ? player.getVideoData() : null;
+                } catch (e) {
+                    isLikelyAd = true; // אם לא ניתן לקבל מידע - כנראה פרסומת
+                }
+                
+                // בדיקות מהירות לזיהוי פרסומת
+                if (duration > 0 && duration <= 60) {
+                    isLikelyAd = true;
+                    console.log('🚨 משך קצר מזוהה:', duration);
+                }
+                
+                if (videoData) {
+                    const videoId = videoData.video_id || '';
+                    const title = (videoData.title || '').toLowerCase();
+                    
+                    // פרסומות לרוב יש ID קצר
+                    if (videoId.length < 10 && videoId.length > 0) {
+                        isLikelyAd = true;
+                        console.log('🚨 video_id קצר:', videoId);
+                    }
+                    
+                    // מילות מפתח של פרסומות
+                    const adWords = ['ad', 'sponsor', 'promo', 'פרסומת', 'buy', 'shop', 'offer', 'deal', 'sale', 'click', 'subscribe'];
+                    if (adWords.some(w => title.includes(w))) {
+                        isLikelyAd = true;
+                        console.log('🚨 מילת פרסומת בכותרת:', title);
+                    }
+                    
+                    // כותרת ריקה או חסרה
+                    if (!title || title.trim() === '') {
+                        isLikelyAd = true;
+                    }
+                } else {
+                    isLikelyAd = true;
+                }
+                
+                // בדיקת playlist - אם אין playlist זה כנראה פרסומת
+                try {
+                    const playlist = player.getPlaylist ? player.getPlaylist() : null;
+                    if (!playlist || playlist.length === 0) {
+                        isLikelyAd = true;
+                        console.log('🚨 אין playlist - כנראה פרסומת');
+                    }
+                } catch (e) {
+                    isLikelyAd = true;
+                }
+                
+                if (isLikelyAd) {
+                    console.log('🚫⚡ פרסומת זוהתה! מדלג מיד...');
+                    
+                    // השתק מיד
+                    if (player.isMuted && !player.isMuted()) {
+                        player.mute();
+                    }
+                    
+                    // נסה לדלג לשיר הבא מיד
+                    if (player.nextVideo) {
+                        player.nextVideo();
+                    }
+                }
+            } catch (e) {
+                console.error('שגיאה בבדיקת פרסומת אגרסיבית:', e);
+            }
         }
 
         function nextTrack() {
@@ -2105,8 +2188,8 @@
                     adIndicators += 1;
                 }
                 
-                // החלטה: אם יש 3+ אינדיקטורים (או 4+ ב-PWA), זו כנראה פרסומת
-                const threshold = isPWA ? 4 : 3;
+                // החלטה: אם יש 2+ אינדיקטורים (או 3+ ב-PWA), זו כנראה פרסומת - סף נמוך יותר
+                const threshold = isPWA ? 3 : 2;
                 const isPossibleAd = adIndicators >= threshold && playerState === 1;
                 
                 console.log(`🔍 אינדיקטורים: ${adIndicators}/${threshold}, משך: ${duration.toFixed(1)}s, PWA: ${isPWA}`);
@@ -2175,10 +2258,10 @@
             if (adDetectionInterval) {
                 clearInterval(adDetectionInterval);
             }
-            // בדיקה כל 200 מילישניות ב-PWA, 300 בדפדפן רגיל
+            // בדיקה כל 100 מילישניות ב-PWA, 150 בדפדפן רגיל - מהיר יותר
             const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                           window.navigator.standalone === true;
-            const checkInterval = isPWA ? 200 : 300;
+            const checkInterval = isPWA ? 100 : 150;
             adDetectionInterval = setInterval(detectAndSkipAds, checkInterval);
             console.log(`🛡️ מערכת זיהוי פרסומות הופעלה (${isPWA ? 'PWA' : 'Browser'} mode, ${checkInterval}ms)`);
         }
