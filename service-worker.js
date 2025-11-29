@@ -77,10 +77,12 @@ self.addEventListener('message', event => {
   switch (event.data.type) {
     case 'KEEP_ALIVE':
       console.log('💓 Service Worker Heartbeat:', new Date(event.data.timestamp).toLocaleTimeString());
-      event.ports[0]?.postMessage({
-        type: 'ALIVE',
-        timestamp: Date.now()
-      });
+      if (event.ports && event.ports[0]) {
+        event.ports[0].postMessage({
+          type: 'ALIVE',
+          timestamp: Date.now()
+        });
+      }
       break;
     case 'SKIP_WAITING':
       console.log('⏭️ מתקבל SKIP_WAITING - מפעיל מיד את Service Worker החדש');
