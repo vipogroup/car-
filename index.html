@@ -1635,19 +1635,49 @@
             }
         }
 
+        // איפוס הפרמטרים שמזהים פרסומות כדי לאפשר זיהוי מחדש לאחר דילוג ידני
+        function prepareAdDetectionForManualSkip() {
+            consecutiveAdChecks = 0;
+            isAdPlaying = false;
+            lastVideoUrl = '';
+            lastKnownDuration = 0;
+        }
+
+        // הפעל מחדש את מנגנון זיהוי הפרסומות לאחר שהמשתמש דילג ידנית על שיר
+        function restartAdDetectionAfterManualSkip() {
+            setTimeout(() => {
+                const shouldRestartViaPlay = player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING;
+
+                if (shouldRestartViaPlay) {
+                    playVideo();
+                } else {
+                    startAdDetection();
+                }
+
+                // בדיקה מיידית נוספת להאצת דילוג על פרסומות שמתנפלות אחרי דילוג ידני
+                setTimeout(() => {
+                    detectAndSkipAds();
+                }, 200);
+            }, 350);
+        }
+
         function nextTrack() {
             if (!player) return;
 
             hasUserInteracted = true;
             userRequestedStop = false;
 
+            prepareAdDetectionForManualSkip();
+
             if (songShuffleEnabled && playNextShuffledSong()) {
+                restartAdDetectionAfterManualSkip();
                 return;
             }
 
             if (player.nextVideo) {
                 player.nextVideo();
                 setTimeout(() => {
+                    restartAdDetectionAfterManualSkip();
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
@@ -1661,13 +1691,17 @@
             hasUserInteracted = true;
             userRequestedStop = false;
 
+            prepareAdDetectionForManualSkip();
+
             if (songShuffleEnabled && playPreviousShuffledSong()) {
+                restartAdDetectionAfterManualSkip();
                 return;
             }
 
             if (player.previousVideo) {
                 player.previousVideo();
                 setTimeout(() => {
+                    restartAdDetectionAfterManualSkip();
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
