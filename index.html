@@ -4907,23 +4907,28 @@
             indicator.style.display = 'inline-block';
             indicator.style.animation = 'none';
 
+            // טקסט מותאם למובייל
+            const tapText = isMobile ? 'הקש' : 'לחץ';
+
             if (!voiceControlEnabled) {
-                indicator.innerHTML = '<span class="inline-icon" data-lucide="mic-off" aria-hidden="true"></span> <span>שליטה קולית כבויה - לחץ להפעלה</span>';
+                const iosHint = isIOS ? ' (iOS: הקש לדבר)' : '';
+                indicator.innerHTML = `<span class="inline-icon" data-lucide="mic-off" aria-hidden="true"></span> <span>🎤 ${tapText} להפעלת פקודות קוליות${iosHint}</span>`;
                 indicator.style.background = 'rgba(255, 255, 255, 0.06)';
                 indicator.style.borderColor = 'rgba(255, 255, 255, 0.10)';
                 indicator.style.color = 'rgba(237, 239, 243, 0.68)';
-                indicator.setAttribute('title', 'לחץ כדי להפעיל שליטה קולית');
+                indicator.setAttribute('title', `${tapText} כדי להפעיל שליטה קולית`);
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             } else if (isVoiceActive) {
-                indicator.innerHTML = '<span class="inline-icon" data-lucide="mic" aria-hidden="true"></span> <span>מאזין לפקודות... (לחץ לכיבוי)</span>';
+                const listeningText = isIOS ? 'דבר עכשיו!' : 'מאזין...';
+                indicator.innerHTML = `<span class="inline-icon" data-lucide="mic" aria-hidden="true"></span> <span>🎤 ${listeningText} (${tapText} לכיבוי)</span>`;
                 indicator.style.background = 'rgba(47, 107, 255, 0.15)';
                 indicator.style.borderColor = 'rgba(47, 107, 255, 0.4)';
                 indicator.style.color = '#2F6BFF';
                 indicator.style.animation = 'pulse 2s infinite';
-                indicator.setAttribute('title', 'לחץ כדי לכבות את השליטה הקולית');
+                indicator.setAttribute('title', `${tapText} כדי לכבות את השליטה הקולית`);
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             } else {
-                indicator.innerHTML = '<span class="inline-icon" data-lucide="mic" aria-hidden="true"></span> <span>מפעיל שליטה קולית...</span>';
+                indicator.innerHTML = `<span class="inline-icon" data-lucide="mic" aria-hidden="true"></span> <span>🎤 מפעיל שליטה קולית...</span>`;
                 indicator.style.background = 'rgba(47, 107, 255, 0.10)';
                 indicator.style.borderColor = 'rgba(47, 107, 255, 0.25)';
                 indicator.style.color = 'rgba(47, 107, 255, 0.8)';
@@ -4979,6 +4984,11 @@
             updateVoiceIndicator();
         }
 
+        // זיהוי מכשיר מובייל
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isAndroid = /Android/i.test(navigator.userAgent);
+
         function initVoiceRecognition() {
             // בדיקה אם הדפדפן תומך בזיהוי קולי
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -4987,12 +4997,27 @@
                 console.warn('[!] הדפדפן לא תומך בזיהוי קולי');
                 voiceRecognitionInitialized = false;
                 updateVoiceIndicator();
+                // הצגת הודעה למשתמש במובייל
+                if (isMobile) {
+                    showVoiceCommandFeedback('⚠️ דפדפן זה לא תומך בפקודות קוליות. נסה Chrome');
+                }
                 return;
             }
 
+            console.log(`[Voice] מאתחל זיהוי קולי - מובייל: ${isMobile}, iOS: ${isIOS}, Android: ${isAndroid}`);
+
             recognition = new SpeechRecognition();
-            recognition.continuous = true; // האזנה רציפה
-            recognition.interimResults = false;
+            
+            // iOS לא תומך טוב ב-continuous mode
+            if (isIOS) {
+                recognition.continuous = false;
+                recognition.interimResults = true; // תוצאות ביניים ב-iOS
+                console.log('[Voice] iOS מזוהה - מצב לא רציף');
+            } else {
+                recognition.continuous = true;
+                recognition.interimResults = false;
+            }
+            
             recognition.lang = 'he-IL'; // עברית כברירת מחדל
             recognition.maxAlternatives = 3;
 
