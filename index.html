@@ -2394,7 +2394,7 @@
         let refreshing = false;
         let updateListenerAttached = false;
         const THEME_STORAGE_KEY = 'musicPlayerTheme';
-        const AVAILABLE_THEMES = ['classic', 'neon', 'glass', 'forest']; // modern = base
+        const AVAILABLE_THEMES = ['dark', 'light']; // dark = default (Dark Graphite), light = day mode (Light Titanium)
 
         let player;
         let currentPlaylistIndex = 0;
@@ -2448,7 +2448,7 @@
         let lastKnownDuration = 0; // משך הסרטון האחרון שנשמר
         let lastVideoUrl = ''; // URL הסרטון האחרון
         let consecutiveAdChecks = 0; // מספר בדיקות רציפות שזיהו פרסומת
-        let currentTheme = 'modern';
+        let currentTheme = 'dark';
 
         // טעינת פלייליסטים מ-LocalStorage או ברירת מחדל
         const defaultPlaylists = [
@@ -3677,10 +3677,10 @@
         function applyTheme(theme) {
             const body = document.body;
             AVAILABLE_THEMES.forEach(t => body.classList.remove(`theme-${t}`));
-            if (theme && theme !== 'modern') {
+            if (theme && theme !== 'dark') {
                 body.classList.add(`theme-${theme}`);
             }
-            currentTheme = theme || 'modern';
+            currentTheme = theme || 'dark';
             localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
             updateThemeCardsActiveState();
         }
@@ -3689,17 +3689,17 @@
             const cards = document.querySelectorAll('.theme-card');
             cards.forEach(card => {
                 const cardTheme = card.getAttribute('data-theme');
-                const isActive = cardTheme === currentTheme || (currentTheme === 'modern' && cardTheme === 'modern');
+                const isActive = cardTheme === currentTheme;
                 card.classList.toggle('active', isActive);
             });
         }
 
         function initTheme() {
             const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-            if (savedTheme && (savedTheme === 'modern' || AVAILABLE_THEMES.includes(savedTheme))) {
+            if (savedTheme && AVAILABLE_THEMES.includes(savedTheme)) {
                 currentTheme = savedTheme;
             } else {
-                currentTheme = 'modern';
+                currentTheme = 'dark'; // Dark Graphite as default
             }
             applyTheme(currentTheme);
         }
