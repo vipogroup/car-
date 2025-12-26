@@ -281,6 +281,46 @@
             pointer-events: auto !important;
         }
 
+        /* Black overlay for song transitions */
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(145deg, #0A0C10, #12161E);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .video-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .video-overlay-content {
+            text-align: center;
+            color: rgba(237, 239, 243, 0.6);
+        }
+
+        .video-overlay-content .inline-icon svg {
+            width: 32px;
+            height: 32px;
+            stroke: #2F6BFF;
+            animation: pulse 1.5s ease infinite;
+        }
+
+        .video-overlay-text {
+            font-size: 13px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
         .control-panel {
             display: flex;
             flex-direction: column;
@@ -2222,7 +2262,15 @@
         </h2>
         <div class="layout-columns">
             <div class="media-column">
-                <div id="player" class="video-frame" title="נגן YouTube - לחיצות חסומות"></div>
+                <div class="video-frame">
+                    <div id="player" title="נגן YouTube - לחיצות חסומות"></div>
+                    <div id="videoOverlay" class="video-overlay">
+                        <div class="video-overlay-content">
+                            <span class="inline-icon" data-lucide="music" aria-hidden="true"></span>
+                            <div class="video-overlay-text">מעבר לשיר הבא...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="interface-column">
                 <div class="control-panel">
@@ -3416,16 +3464,38 @@
             }
         }
 
+        // Show/hide video overlay during transitions
+        function showVideoOverlay(text = 'מעבר לשיר הבא...') {
+            const overlay = document.getElementById('videoOverlay');
+            if (overlay) {
+                const textEl = overlay.querySelector('.video-overlay-text');
+                if (textEl) textEl.textContent = text;
+                overlay.classList.add('active');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        }
+
+        function hideVideoOverlay() {
+            const overlay = document.getElementById('videoOverlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+        }
+
         function nextTrack() {
             if (!player) return;
 
             hasUserInteracted = true;
             userRequestedStop = false;
 
+            // Show overlay during transition
+            showVideoOverlay('מעבר לשיר הבא...');
+
             prepareAdDetectionForManualSkip();
 
             if (songShuffleEnabled && playNextShuffledSong()) {
                 restartAdDetectionAfterManualSkip();
+                setTimeout(hideVideoOverlay, 2000);
                 return;
             }
 
@@ -3436,7 +3506,8 @@
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
-                }, 400);
+                    hideVideoOverlay();
+                }, 2000);
             }
         }
 
@@ -3446,10 +3517,14 @@
             hasUserInteracted = true;
             userRequestedStop = false;
 
+            // Show overlay during transition
+            showVideoOverlay('חוזר לשיר הקודם...');
+
             prepareAdDetectionForManualSkip();
 
             if (songShuffleEnabled && playPreviousShuffledSong()) {
                 restartAdDetectionAfterManualSkip();
+                setTimeout(hideVideoOverlay, 2000);
                 return;
             }
 
@@ -3460,7 +3535,8 @@
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
-                }, 400);
+                    hideVideoOverlay();
+                }, 2000);
             }
         }
 
