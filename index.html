@@ -4209,17 +4209,29 @@
                         nextTrack();
                     });
                     
-                    // כפתורים נוספים למעבר בין פלייליסטים
-                    navigator.mediaSession.setActionHandler('seekbackward', () => {
-                        console.log('[Media] פלייליסט קודם (מ-Media Session)');
+                    // כפתורים נוספים למעבר בין פלייליסטים (seekbackward/seekforward)
+                    // אלה יופיעו כ-⏪10/⏩10 באנדרואיד
+                    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+                        console.log('[Media] ⏪ פלייליסט קודם (מ-Media Session)');
                         previousPlaylist();
                     });
-                    navigator.mediaSession.setActionHandler('seekforward', () => {
-                        console.log('[Media] פלייליסט הבא (מ-Media Session)');
+                    navigator.mediaSession.setActionHandler('seekforward', (details) => {
+                        console.log('[Media] ⏩ פלייליסט הבא (מ-Media Session)');
                         nextPlaylist();
                     });
+                    
+                    // הגדרת מיקום - זה מאפשר את כפתורי ה-seek להופיע
+                    try {
+                        navigator.mediaSession.setPositionState({
+                            duration: 300, // 5 דקות פיקטיביות
+                            playbackRate: 1,
+                            position: 0
+                        });
+                    } catch (e) {
+                        console.log('[Media] Position state not supported');
+                    }
 
-                    console.log('[V] Media Session API מופעל - 5 כפתורים זמינים (שירים + פלייליסטים)');
+                    console.log('[V] Media Session API מופעל - כולל כפתורי פלייליסט (⏪⏩)');
                 } catch (e) {
                     console.warn('Media Session API לא נתמך:', e);
                 }
