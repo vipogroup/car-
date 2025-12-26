@@ -1,5 +1,5 @@
 // Service Worker לשמירה על האפליקציה פעילה ברקע
-const CACHE_NAME = 'car-music-player-v230';
+const CACHE_NAME = 'car-music-player-v231';
 const urlsToCache = [
   'index.html',
   'manifest.json',
@@ -37,35 +37,35 @@ self.addEventListener('activate', event => {
   return self.clients.claim();
 });
 
-// טיפול בבקשות
+// טיפול בבקשות - אסטרטגיית Network First
 self.addEventListener('fetch', event => {
   // רק לבקשות GET
   if (event.request.method !== 'GET') return;
   
   event.respondWith(
-    caches.match(event.request)
+    // נסה קודם מהרשת (Network First)
+    fetch(event.request)
       .then(response => {
-        // החזר מהמטמון אם קיים
-        if (response) {
-          return response;
+        // בדוק אם התשובה תקינה
+        if (!response || response.status !== 200) {
+          // אם הרשת נכשלה, נסה מה-cache
+          return caches.match(event.request).then(cachedResponse => {
+            return cachedResponse || response;
+          });
         }
         
-        // אחרת, שלוף מהרשת
-        return fetch(event.request).then(response => {
-          // בדוק אם התשובה תקינה
-          if (!response || response.status !== 200 || response.type === 'error') {
-            return response;
-          }
-          
-          // שמור במטמון לפעם הבאה
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-          
-          return response;
-        });
+        // שמור במטמון לפעם הבאה
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME)
+          .then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+        
+        return response;
+      })
+      .catch(() => {
+        // אם אין רשת, החזר מה-cache
+        return caches.match(event.request);
       })
   );
 });
