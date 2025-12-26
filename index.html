@@ -3150,6 +3150,9 @@
         function onYouTubeIframeAPIReady() {
             console.log('YouTube API נטען בהצלחה');
             
+            // הצג מסך שחור מיד בטעינה
+            showVideoOverlay('טוען נגן...');
+            
             // בחירת פלייליסט רנדומלי בהפעלה
             currentPlaylistIndex = Math.floor(Math.random() * playlists.length);
             console.log(`[Random] נבחר פלייליסט רנדומלי: ${playlists[currentPlaylistIndex].name} (${currentPlaylistIndex + 1}/${playlists.length})`);
@@ -3257,6 +3260,8 @@
                             userRequestedStop = false;
                             updateCurrentSong();
                             updatePlayPauseButton(true);
+                            // הסתר מסך שחור כשהשיר מתחיל לנגן
+                            setTimeout(hideVideoOverlay, 500);
                             startPlaybackStateTracking();
                             if (restoringPlayback && pendingRestoreState) {
                                 const targetTime = pendingRestoreState.time || 0;
@@ -3339,6 +3344,9 @@
             if (player && player.playVideo) {
                 if (userInitiated) {
                     userRequestedStop = false;
+                    // הצג מסך שחור בלחיצה על play
+                    showVideoOverlay('מפעיל...');
+                    setTimeout(hideVideoOverlay, 1500);
                 }
 
                 hasUserInteracted = true;
@@ -3518,7 +3526,7 @@
 
             if (songShuffleEnabled && playNextShuffledSong()) {
                 restartAdDetectionAfterManualSkip();
-                setTimeout(hideVideoOverlay, 2000);
+                setTimeout(hideVideoOverlay, 3000);
                 return;
             }
 
@@ -3530,7 +3538,7 @@
                         playVideo();
                     }
                     hideVideoOverlay();
-                }, 2000);
+                }, 3000);
             }
         }
 
@@ -3547,7 +3555,7 @@
 
             if (songShuffleEnabled && playPreviousShuffledSong()) {
                 restartAdDetectionAfterManualSkip();
-                setTimeout(hideVideoOverlay, 2000);
+                setTimeout(hideVideoOverlay, 3000);
                 return;
             }
 
@@ -3559,7 +3567,7 @@
                         playVideo();
                     }
                     hideVideoOverlay();
-                }, 2000);
+                }, 3000);
             }
         }
 
