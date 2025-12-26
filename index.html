@@ -870,23 +870,23 @@
 
         <div class="control-panel">
             <div class="control-buttons top-controls">
-                <button class="control-btn icon-btn" title="שיר הבא" aria-label="שיר הבא" onclick="buttonClickEffect(this); nextTrack()">⏮</button>
+                <button class="control-btn icon-btn" title="שיר הבא" aria-label="שיר הבא" onclick="buttonClickEffect(this); nextTrack()">⏭</button>
                 <button class="control-btn icon-btn" id="playPauseBtn" title="עצור" aria-label="עצור" onclick="buttonClickEffect(this); togglePlayPause(this)">⏸</button>
-                <button class="control-btn icon-btn" title="שיר קודם" aria-label="שיר קודם" onclick="buttonClickEffect(this); previousTrack()">⏭</button>
+                <button class="control-btn icon-btn" title="שיר קודם" aria-label="שיר קודם" onclick="buttonClickEffect(this); previousTrack()">⏮</button>
                 <button class="control-btn icon-btn shuffle-btn" id="songShuffleBtn" title="ערבוב שירים" aria-label="ערבוב שירים" onclick="buttonClickEffect(this); toggleSongShuffle()">🔀</button>
                 <button class="control-btn icon-btn shuffle-btn" id="playlistShuffleBtn" title="ערבוב פלייליסטים" aria-label="ערבוב פלייליסטים" onclick="buttonClickEffect(this); togglePlaylistShuffle()">🔁</button>
             </div>
 
             <div class="control-buttons playlist-controls">
-                <button class="control-btn pill-btn" id="prevPlaylistBtn" style="display: none;"
-                    title="פלייליסט קודם" aria-label="פלייליסט קודם"
-                    onclick="buttonClickEffect(this); previousPlaylist()">⏪</button>
-                <button class="control-btn pill-btn"
-                    title="ניהול פלייליסטים" aria-label="ניהול פלייליסטים"
-                    onclick="buttonClickEffect(this); openPlaylistManager()">📜</button>
                 <button class="control-btn pill-btn" id="nextPlaylistBtn" style="display: none;"
                     title="פלייליסט הבא" aria-label="פלייליסט הבא"
                     onclick="buttonClickEffect(this); nextPlaylist()">⏩</button>
+                <button class="control-btn pill-btn"
+                    title="ניהול פלייליסטים" aria-label="ניהול פלייליסטים"
+                    onclick="buttonClickEffect(this); openPlaylistManager()">📜</button>
+                <button class="control-btn pill-btn" id="prevPlaylistBtn" style="display: none;"
+                    title="פלייליסט קודם" aria-label="פלייליסט קודם"
+                    onclick="buttonClickEffect(this); previousPlaylist()">⏪</button>
             </div>
         </div>
 
