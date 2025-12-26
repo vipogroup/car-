@@ -3150,6 +3150,10 @@
         function onYouTubeIframeAPIReady() {
             console.log('YouTube API נטען בהצלחה');
             
+            // בחירת פלייליסט רנדומלי בהפעלה
+            currentPlaylistIndex = Math.floor(Math.random() * playlists.length);
+            console.log(`[Random] נבחר פלייליסט רנדומלי: ${playlists[currentPlaylistIndex].name} (${currentPlaylistIndex + 1}/${playlists.length})`);
+            
             // הצגת הודעה למשתמש שהפלייליסט נטען
             document.getElementById('currentSong').textContent = 'טוען פלייליסט... אנא המתן';
             
@@ -3206,11 +3210,30 @@
                         updatePlaylistName();
                         // מנסה להתחיל לנגן אוטומטית
                         document.getElementById('currentSong').textContent = 'מתחיל לנגן...';
+                        
+                        // קפיצה לשיר רנדומלי בפלייליסט
                         setTimeout(() => {
-                            if (player && player.playVideo) {
+                            if (player && player.getPlaylist) {
+                                try {
+                                    const playlist = player.getPlaylist();
+                                    if (playlist && playlist.length > 1) {
+                                        const randomIndex = Math.floor(Math.random() * playlist.length);
+                                        console.log(`[Random] קופץ לשיר רנדומלי: ${randomIndex + 1}/${playlist.length}`);
+                                        player.playVideoAt(randomIndex);
+                                    } else if (player.playVideo) {
+                                        player.playVideo();
+                                    }
+                                } catch (err) {
+                                    console.warn('[!] לא ניתן לקפוץ לשיר רנדומלי:', err);
+                                    if (player && player.playVideo) {
+                                        player.playVideo();
+                                    }
+                                }
+                            } else if (player && player.playVideo) {
                                 player.playVideo();
                             }
-                        }, 500);
+                        }, 800);
+                        
                         // אתחול מצב ערבוב שירים אם הופעל בעבר
                         if (songShuffleEnabled && player && player.setShuffle) {
                             try {
