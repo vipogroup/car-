@@ -1106,6 +1106,170 @@
             color: #2F6BFF;
         }
 
+        /* Voice Commands Help Modal */
+        .voice-help-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 16px;
+        }
+
+        .voice-help-overlay.open {
+            display: flex;
+        }
+
+        .voice-help-modal {
+            background: linear-gradient(145deg, rgba(18, 22, 30, 0.98), rgba(12, 15, 20, 0.98));
+            border-radius: 18px;
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            color: #EDEFF3;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+        }
+
+        .voice-help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .voice-help-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voice-help-header h3 .inline-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: #2F6BFF;
+        }
+
+        .voice-help-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            color: rgba(237, 239, 243, 0.92);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .voice-help-close:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .voice-help-close .icon-only svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+        }
+
+        .voice-help-intro {
+            font-size: 14px;
+            color: rgba(237, 239, 243, 0.85);
+            margin: 0 0 16px 0;
+            text-align: right;
+        }
+
+        .voice-help-section {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .voice-help-section h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2F6BFF;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voice-help-section h4 .inline-icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: #2F6BFF;
+        }
+
+        .voice-help-section ul {
+            margin: 0;
+            padding: 0 16px 0 0;
+            list-style: none;
+        }
+
+        .voice-help-section li {
+            font-size: 13px;
+            color: rgba(237, 239, 243, 0.85);
+            margin-bottom: 8px;
+            padding-right: 12px;
+            position: relative;
+        }
+
+        .voice-help-section li::before {
+            content: '•';
+            position: absolute;
+            right: 0;
+            color: #2F6BFF;
+        }
+
+        .voice-help-section li:last-child {
+            margin-bottom: 0;
+        }
+
+        .voice-help-section li strong {
+            color: #EDEFF3;
+            background: rgba(47, 107, 255, 0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .voice-help-tip {
+            background: rgba(47, 107, 255, 0.10);
+            border: 1px solid rgba(47, 107, 255, 0.25);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: rgba(237, 239, 243, 0.85);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .voice-help-tip .inline-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: #2F6BFF;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
         /* Legacy day-mode support - redirects to theme-light */
         .day-mode {
             background: linear-gradient(145deg, #E8EAED 0%, #F5F6F8 50%, #E8EAED 100%) !important;
@@ -1906,6 +2070,10 @@
                 <span class="icon-only" data-lucide="layout-dashboard" aria-hidden="true"></span>
                 <span>בחר פריסה</span>
             </button>
+            <button role="menuitem" onclick="openVoiceCommandsHelp()">
+                <span class="icon-only" data-lucide="mic" aria-hidden="true"></span>
+                <span>פקודות קוליות</span>
+            </button>
             <button role="menuitem" onclick="handleUpdateCheck(this)">
                 <span class="icon-only" data-lucide="refresh-cw" aria-hidden="true"></span>
                 <span>בדוק עדכון עכשיו</span>
@@ -1947,6 +2115,69 @@
                         <h4>Light Titanium</h4>
                         <p>בהיר ונקי לנהיגת יום</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Commands Help Modal -->
+    <div class="voice-help-overlay" id="voiceHelpOverlay" aria-hidden="true" onclick="voiceHelpOverlayClick(event)">
+        <div class="voice-help-modal" role="dialog" aria-modal="true" aria-labelledby="voiceHelpTitle">
+            <div class="voice-help-header">
+                <h3 id="voiceHelpTitle">
+                    <span class="inline-icon" data-lucide="mic" aria-hidden="true"></span>
+                    <span>פקודות קוליות</span>
+                </h3>
+                <button class="voice-help-close" aria-label="סגור" onclick="closeVoiceCommandsHelp()">
+                    <span class="icon-only" data-lucide="x" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="voice-help-content">
+                <p class="voice-help-intro">אמור את אחת הפקודות הבאות כדי לשלוט בנגן:</p>
+                
+                <div class="voice-help-section">
+                    <h4><span class="inline-icon" data-lucide="music" aria-hidden="true"></span> שליטה בשירים</h4>
+                    <ul>
+                        <li><strong>"הבא"</strong> / <strong>"קדימה"</strong> - מעבר לשיר הבא</li>
+                        <li><strong>"קודם"</strong> / <strong>"אחורה"</strong> - חזרה לשיר הקודם</li>
+                    </ul>
+                </div>
+
+                <div class="voice-help-section">
+                    <h4><span class="inline-icon" data-lucide="play-circle" aria-hidden="true"></span> שליטה בניגון</h4>
+                    <ul>
+                        <li><strong>"נגן"</strong> / <strong>"הפעל"</strong> - הפעלת הנגן</li>
+                        <li><strong>"עצור"</strong> / <strong>"הפסק"</strong> - עצירת הנגן</li>
+                    </ul>
+                </div>
+
+                <div class="voice-help-section">
+                    <h4><span class="inline-icon" data-lucide="volume-2" aria-hidden="true"></span> שליטה בעוצמה</h4>
+                    <ul>
+                        <li><strong>"הגבר"</strong> / <strong>"חזק יותר"</strong> - הגברת עוצמה</li>
+                        <li><strong>"הנמך"</strong> / <strong>"חלש יותר"</strong> - הנמכת עוצמה</li>
+                        <li><strong>"השתק"</strong> / <strong>"שקט"</strong> - השתקה</li>
+                    </ul>
+                </div>
+
+                <div class="voice-help-section">
+                    <h4><span class="inline-icon" data-lucide="list-music" aria-hidden="true"></span> שליטה בפלייליסטים</h4>
+                    <ul>
+                        <li><strong>"פלייליסט הבא"</strong> - מעבר לפלייליסט הבא</li>
+                        <li><strong>"פלייליסט קודם"</strong> - חזרה לפלייליסט הקודם</li>
+                    </ul>
+                </div>
+
+                <div class="voice-help-section">
+                    <h4><span class="inline-icon" data-lucide="shuffle" aria-hidden="true"></span> ערבוב</h4>
+                    <ul>
+                        <li><strong>"ערבוב"</strong> / <strong>"מצב אקראי"</strong> - הפעלת ערבוב שירים</li>
+                    </ul>
+                </div>
+
+                <div class="voice-help-tip">
+                    <span class="inline-icon" data-lucide="lightbulb" aria-hidden="true"></span>
+                    <span>טיפ: לחץ על אינדיקטור המיקרופון כדי להפעיל/לכבות שליטה קולית</span>
                 </div>
             </div>
         </div>
@@ -3411,6 +3642,34 @@
             }
             applyTheme(theme);
             closeThemeSelector();
+        }
+
+        // Voice Commands Help Modal Functions
+        function openVoiceCommandsHelp() {
+            const overlay = document.getElementById('voiceHelpOverlay');
+            if (overlay) {
+                overlay.classList.add('open');
+                overlay.setAttribute('aria-hidden', 'false');
+                // Close settings menu
+                const dropdown = document.getElementById('settingsDropdown');
+                if (dropdown) dropdown.classList.remove('open');
+                // Render icons
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        }
+
+        function closeVoiceCommandsHelp() {
+            const overlay = document.getElementById('voiceHelpOverlay');
+            if (overlay) {
+                overlay.classList.remove('open');
+                overlay.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        function voiceHelpOverlayClick(event) {
+            if (event.target && event.target.id === 'voiceHelpOverlay') {
+                closeVoiceCommandsHelp();
+            }
         }
 
         function applyTheme(theme) {
