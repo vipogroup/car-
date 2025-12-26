@@ -5015,13 +5015,23 @@
                 const transcriptRaw = event.results[last][0].transcript;
                 const transcript = normaliseTranscript(transcriptRaw);
                 
-                console.log('[Voice] זוהה:', transcript);
+                console.log('[Voice] זוהה (גולמי):', transcriptRaw);
+                console.log('[Voice] זוהה (מנורמל):', transcript);
+                
+                // בדיקת cooldown למניעת פקודות כפולות
+                const now = Date.now();
+                if (now - lastVoiceCommandTime < VOICE_COMMAND_COOLDOWN_MS) {
+                    console.log('[Voice] פקודה נחסמה - cooldown פעיל');
+                    return;
+                }
                 
                 // חיפוש פקודה מתאימה
                 let commandExecuted = false;
                 for (const definition of voiceCommandDefinitions) {
-                    if (definition.phrases.some(phrase => transcript.includes(phrase))) {
+                    const normalizedPhrases = definition.phrases.map(p => normaliseTranscript(p));
+                    if (normalizedPhrases.some(phrase => transcript.includes(phrase))) {
                         console.log(`[V] פקודה קולית מזוהה: ${definition.label}`);
+                        lastVoiceCommandTime = now;
                         commandExecuted = handleVoiceCommand(definition);
                         break;
                     }
@@ -5029,6 +5039,7 @@
 
                 if (!commandExecuted) {
                     console.log('[?] פקודה לא זוהתה:', transcript);
+                    showVoiceCommandFeedback(`🎤 "${transcriptRaw}" - לא זוהתה פקודה`);
                 }
             };
 
@@ -5037,11 +5048,20 @@
                 
                 if (event.error === 'no-speech') {
                     console.log('[Voice] לא זוהה דיבור - ממשיך להאזין...');
+                    // המשך להאזין גם אם אין דיבור
+                    if (voiceControlEnabled) {
+                        scheduleVoiceRecognitionRestart();
+                    }
                 } else if (event.error === 'not-allowed') {
                     console.error('[Error] הרשאות מיקרופון נדחו');
                     voiceControlEnabled = false;
                     isVoiceActive = false;
                     updateVoiceIndicator();
+                } else if (event.error === 'aborted' || event.error === 'network') {
+                    console.log('[Voice] שגיאה זמנית - מנסה שוב...');
+                    if (voiceControlEnabled) {
+                        scheduleVoiceRecognitionRestart();
+                    }
                 }
             };
 
@@ -5076,6 +5096,14 @@
                 // הפעל זיהוי קולי
                 setTimeout(() => {
                     initVoiceRecognition();
+                    // הפעל את הזיהוי הקולי אוטומטית אחרי אתחול
+                    setTimeout(() => {
+                        if (voiceRecognitionInitialized && recognition) {
+                            voiceControlEnabled = true;
+                            startVoiceRecognition();
+                            console.log('[Voice] שליטה קולית הופעלה אוטומטית');
+                        }
+                    }, 500);
                 }, 1000);
             } catch (e) {
                 permissions.push('[X] מיקרופון (נדחה)');
