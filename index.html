@@ -3260,8 +3260,27 @@
                             userRequestedStop = false;
                             updateCurrentSong();
                             updatePlayPauseButton(true);
-                            // הסתר מסך שחור כשהשיר מתחיל לנגן
-                            setTimeout(hideVideoOverlay, 500);
+                            
+                            // הסתר מסך שחור רק כשהשיר באמת מתחיל לנגן (לא פרסומת)
+                            // המתן קצת לוודא שזה לא פרסומת
+                            setTimeout(() => {
+                                if (player && player.getVideoData) {
+                                    const videoData = player.getVideoData();
+                                    const duration = player.getDuration ? player.getDuration() : 0;
+                                    // אם משך הסרטון קצר מדי, זה כנראה פרסומת
+                                    if (duration > 30) {
+                                        songTransitionInProgress = false;
+                                        hideVideoOverlay();
+                                        console.log('[Video] שיר מתחיל - מסתיר מסך שחור');
+                                    } else {
+                                        console.log('[Video] זוהתה פרסומת קצרה - משאיר מסך שחור');
+                                    }
+                                } else {
+                                    songTransitionInProgress = false;
+                                    hideVideoOverlay();
+                                }
+                            }, 1000);
+                            
                             startPlaybackStateTracking();
                             if (restoringPlayback && pendingRestoreState) {
                                 const targetTime = pendingRestoreState.time || 0;
@@ -3513,20 +3532,24 @@
             }
         }
 
+        // משתנה לשמירת מצב מעבר שיר - המסך השחור יישאר עד שהשיר מתחיל
+        let songTransitionInProgress = false;
+
         function nextTrack() {
             if (!player) return;
 
             hasUserInteracted = true;
             userRequestedStop = false;
+            songTransitionInProgress = true;
 
-            // Show overlay during transition
+            // Show overlay during transition - יישאר עד שהשיר מתחיל לנגן
             showVideoOverlay('מעבר לשיר הבא...');
 
             prepareAdDetectionForManualSkip();
 
             if (songShuffleEnabled && playNextShuffledSong()) {
                 restartAdDetectionAfterManualSkip();
-                setTimeout(hideVideoOverlay, 3000);
+                // המסך השחור יוסר רק כשהשיר יתחיל לנגן (ב-onStateChange)
                 return;
             }
 
@@ -3537,8 +3560,8 @@
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
-                    hideVideoOverlay();
-                }, 3000);
+                    // המסך השחור יוסר רק כשהשיר יתחיל לנגן (ב-onStateChange)
+                }, 1000);
             }
         }
 
@@ -3547,15 +3570,16 @@
 
             hasUserInteracted = true;
             userRequestedStop = false;
+            songTransitionInProgress = true;
 
-            // Show overlay during transition
+            // Show overlay during transition - יישאר עד שהשיר מתחיל לנגן
             showVideoOverlay('חוזר לשיר הקודם...');
 
             prepareAdDetectionForManualSkip();
 
             if (songShuffleEnabled && playPreviousShuffledSong()) {
                 restartAdDetectionAfterManualSkip();
-                setTimeout(hideVideoOverlay, 3000);
+                // המסך השחור יוסר רק כשהשיר יתחיל לנגן (ב-onStateChange)
                 return;
             }
 
@@ -3566,8 +3590,8 @@
                     if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
                         playVideo();
                     }
-                    hideVideoOverlay();
-                }, 3000);
+                    // המסך השחור יוסר רק כשהשיר יתחיל לנגן (ב-onStateChange)
+                }, 1000);
             }
         }
 
