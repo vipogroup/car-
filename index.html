@@ -1645,7 +1645,7 @@
             try {
                 // הגדרות שונות לסרטון בודד לעומת פלייליסט
                 const playerVars = {
-                    'autoplay': 0,
+                    'autoplay': 1,
                     'controls': 1,
                     'rel': 0,
                     'modestbranding': 1,
@@ -1669,12 +1669,13 @@
                     events: {
                     'onReady': () => {
                         updatePlaylistName();
-                        // הודעה למשתמש שצריך ללחוץ על כפתור הניגון
-                        document.getElementById('currentSong').textContent = 'מוכן לנגן – לחץ על ▶️ כדי להתחיל';
-                        // וידוא שהנגן במצב עצירה עד לפעולה של המשתמש
-                        if (player && player.pauseVideo) {
-                            player.pauseVideo();
-                        }
+                        // מנסה להתחיל לנגן אוטומטית
+                        document.getElementById('currentSong').textContent = 'מתחיל לנגן...';
+                        setTimeout(() => {
+                            if (player && player.playVideo) {
+                                player.playVideo();
+                            }
+                        }, 500);
                         // אתחול מצב ערבוב שירים אם הופעל בעבר
                         if (songShuffleEnabled && player && player.setShuffle) {
                             try {
@@ -1915,18 +1916,10 @@
                     isLikelyAd = true;
                 }
                 
+                // השבתנו את ההשתקה האוטומטית כי היא גרמה להשתקת שירים רגילים
+                // אם יש פרסומות, המשתמש יכול לדלג ידנית
                 if (isLikelyAd) {
-                    console.log('🚫⚡ פרסומת זוהתה! מדלג מיד...');
-                    
-                    // השתק מיד
-                    if (player.isMuted && !player.isMuted()) {
-                        player.mute();
-                    }
-                    
-                    // נסה לדלג לשיר הבא מיד
-                    if (player.nextVideo) {
-                        player.nextVideo();
-                    }
+                    console.log('💡 זוהה תוכן חשוד - לא משתיקים (ייתכן שזה שיר רגיל)');
                 }
             } catch (e) {
                 console.error('שגיאה בבדיקת פרסומת אגרסיבית:', e);
@@ -2315,24 +2308,17 @@
                     }
                 }
                 
-                // 2. בדיקת משך - פרסומות יכולות להיות 5-180 שניות
-                if (duration > 0 && duration >= 5 && duration <= 180) {
+                // 2. בדיקת משך - רק סרטונים קצרים מאוד (פחות מ-45 שניות) חשודים
+                if (duration > 0 && duration < 45) {
                     adIndicators++;
-                    // אם המשך קצר מאוד (פחות מ-30 שניות) - חשוד יותר
-                    if (duration < 30) {
+                    // אם המשך קצר מאוד (פחות מ-20 שניות) - חשוד יותר
+                    if (duration < 20) {
                         adIndicators++;
                     }
                 }
                 
-                // 3. שינוי פתאומי ב-URL או במשך
-                if (lastVideoUrl && currentUrl && currentUrl !== lastVideoUrl) {
-                    adIndicators++;
-                    console.log('🔄 שינוי URL זוהה');
-                }
-                if (lastKnownDuration > 0 && Math.abs(duration - lastKnownDuration) > 15) {
-                    adIndicators++;
-                    console.log('⏱️ שינוי משך זוהה');
-                }
+                // 3. שינוי פתאומי ב-URL או במשך - הוסר כי זה קורה תמיד בין שירים
+                // שינוי URL ושינוי משך הם נורמליים בין שירים ולא צריכים להיספר
                 
                 // 4. בדיקת שם הסרטון (פרסומות לעיתים קרובות יש מילים מסוימות)
                 if (videoData && videoData.title) {
@@ -2381,8 +2367,8 @@
                     adIndicators += 1;
                 }
                 
-                // החלטה: אם יש 2+ אינדיקטורים (או 3+ ב-PWA), זו כנראה פרסומת - סף נמוך יותר
-                const threshold = isPWA ? 3 : 2;
+                // החלטה: אם יש 4+ אינדיקטורים, זו כנראה פרסומת - סף גבוה יותר למנוע false positives
+                const threshold = isPWA ? 4 : 4;
                 const isPossibleAd = adIndicators >= threshold && playerState === 1;
                 
                 console.log(`🔍 אינדיקטורים: ${adIndicators}/${threshold}, משך: ${duration.toFixed(1)}s, PWA: ${isPWA}`);
@@ -2390,47 +2376,24 @@
                 if (isPossibleAd) {
                     consecutiveAdChecks++;
                     
-                    // ב-PWA mode - השתק מיד ללא המתנה
-                    const checksNeeded = isPWA ? 1 : 2;
+                    // צריך יותר בדיקות רציפות לפני השתקה כדי למנוע false positives
+                    const checksNeeded = isPWA ? 3 : 4;
                     
-                    if (!isAdPlaying && consecutiveAdChecks >= checksNeeded) {
-                        console.log(`🚫 זוהתה פרסומת! (אינדיקטורים: ${adIndicators}, PWA: ${isPWA}) - משתיק ומדלג`);
-                        isAdPlaying = true;
-                        
-                        // השתקת שמע מיידית
-                        if (player.isMuted && !player.isMuted()) {
-                            lastVolume = player.getVolume();
-                            player.mute();
-                        }
-                    }
-                    
-                    // דילוג אגרסיבי במיוחד ב-PWA
-                    if (isAdPlaying) {
-                        if (currentTime < duration - 1) {
-                            // קפיצה גדולה יותר ב-PWA
-                            const skipAmount = isPWA ? 15 : 10;
-                            const skipTo = Math.min(duration - 0.3, currentTime + skipAmount);
-                            player.seekTo(skipTo, true);
-                        } else {
-                            // כמעט בסוף - עבור לשיר הבא
-                            console.log('⏭️ מעביר לשיר הבא...');
-                            if (player.nextVideo) {
-                                player.nextVideo();
-                            }
-                        }
+                    // השבתנו את ההשתקה האוטומטית כי היא גרמה להשתקת שירים רגילים
+                    // אם יש פרסומות אמיתיות, המשתמש יכול לדלג ידנית
+                    if (consecutiveAdChecks >= checksNeeded) {
+                        console.log(`💡 זוהה תוכן חשוד (אינדיקטורים: ${adIndicators}) - לא משתיקים (ייתכן שזה שיר רגיל)`);
                     }
                 } else {
                     // לא פרסומת - איפוס והחזרת שמע
                     consecutiveAdChecks = 0;
+                    isAdPlaying = false;
                     
-                    if (isAdPlaying) {
-                        console.log('✅ פרסומת הסתיימה - מחזיר שמע רגיל');
-                        isAdPlaying = false;
-                        
-                        if (player.isMuted && player.isMuted() && lastVolume > 0) {
-                            player.unMute();
-                            player.setVolume(lastVolume);
-                        }
+                    // תמיד וודא שהשמע לא מושתק בזמן ניגון שיר רגיל
+                    if (player.isMuted && player.isMuted() && lastVolume > 0) {
+                        console.log('🔊 מחזיר שמע - זה שיר רגיל');
+                        player.unMute();
+                        player.setVolume(lastVolume);
                     }
                     
                     // עדכון נתונים אחרונים
