@@ -4479,36 +4479,15 @@
             toggleMute();
         }
 
-        function handleVoiceCommand(command) {
-            const normalizedCommand = command.toLowerCase();
-            console.log('[Voice] פקודה קולית:', normalizedCommand);
+        function handleVoiceCommand(definition) {
+            console.log('[Voice] פקודה קולית:', definition.label);
             
-            if (normalizedCommand.includes('play') || normalizedCommand.includes('נגן') || normalizedCommand.includes('תנגן')) {
-                playVideo();
-                showVoiceCommandFeedback('▶️ מפעיל נגן');
-            } else if (normalizedCommand.includes('pause') || normalizedCommand.includes('עצור') || normalizedCommand.includes('תעצור')) {
-                pauseVideo();
-                showVoiceCommandFeedback('⏸️ עוצר נגן');
-            } else if (normalizedCommand.includes('next') || normalizedCommand.includes('הבא') || normalizedCommand.includes('קדימה')) {
-                nextTrack();
-                showVoiceCommandFeedback('⏭️ מדלג לשיר הבא');
-            } else if (normalizedCommand.includes('previous') || normalizedCommand.includes('קודם') || normalizedCommand.includes('אחורה')) {
-                previousTrack();
-                showVoiceCommandFeedback('⏮️ חוזר לשיר הקודם');
-            } else if (normalizedCommand.includes('mute') || normalizedCommand.includes('השתק') || normalizedCommand.includes('שקט')) {
-                toggleMute();
-                showVoiceCommandFeedback('🔇 משתיק');
-            } else if (normalizedCommand.includes('volume') && (normalizedCommand.includes('up') || normalizedCommand.includes('בגבוה'))) {
-                changeVolume(10);
-                showVoiceCommandFeedback('🔊 מגביר עוצמה');
-            } else if (normalizedCommand.includes('volume') && (normalizedCommand.includes('down') || normalizedCommand.includes('נמוך'))) {
-                changeVolume(-10);
-                showVoiceCommandFeedback('🔉 מנמיך עוצמה');
-            } else if (normalizedCommand.includes('shuffle') || normalizedCommand.includes('ערבוב')) {
-                toggleSongShuffle();
-                showVoiceCommandFeedback('🔀 מצב ערבוב שירים');
+            // הפעל את הפעולה המתאימה
+            if (definition.action && typeof definition.action === 'function') {
+                definition.action();
+                showVoiceCommandFeedback(definition.feedback || `✓ ${definition.label}`);
             } else {
-                console.log('❓ פקודה לא מזוהה:', normalizedCommand);
+                console.log('❓ פעולה לא מוגדרת:', definition.label);
                 showVoiceCommandFeedback('❓ פקודה לא מוכרת');
             }
 
@@ -4542,19 +4521,28 @@
             indicator.style.animation = 'none';
 
             if (!voiceControlEnabled) {
-                indicator.textContent = '🎤 שליטה קולית כבויה - לחיצה להפעיל';
-                indicator.style.background = 'linear-gradient(135deg, #7f8c8d, #95a5a6)';
+                indicator.innerHTML = '<span class="inline-icon" data-lucide="mic-off" aria-hidden="true"></span> <span>שליטה קולית כבויה - לחץ להפעלה</span>';
+                indicator.style.background = 'rgba(255, 255, 255, 0.06)';
+                indicator.style.borderColor = 'rgba(255, 255, 255, 0.10)';
+                indicator.style.color = 'rgba(237, 239, 243, 0.68)';
                 indicator.setAttribute('title', 'לחץ כדי להפעיל שליטה קולית');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
             } else if (isVoiceActive) {
-                indicator.textContent = '🎤 מאזין לפקודות קוליות... (לחיצה לכיבוי)';
-                indicator.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
-                indicator.style.animation = 'pulse 1.5s infinite';
+                indicator.innerHTML = '<span class="inline-icon" data-lucide="mic" aria-hidden="true"></span> <span>מאזין לפקודות... (לחץ לכיבוי)</span>';
+                indicator.style.background = 'rgba(47, 107, 255, 0.15)';
+                indicator.style.borderColor = 'rgba(47, 107, 255, 0.4)';
+                indicator.style.color = '#2F6BFF';
+                indicator.style.animation = 'pulse 2s infinite';
                 indicator.setAttribute('title', 'לחץ כדי לכבות את השליטה הקולית');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
             } else {
-                indicator.textContent = '🎤 מפעיל שליטה קולית...';
-                indicator.style.background = 'linear-gradient(135deg, #f39c12, #d35400)';
-                indicator.style.animation = 'pulse 1.5s infinite';
+                indicator.innerHTML = '<span class="inline-icon" data-lucide="mic" aria-hidden="true"></span> <span>מפעיל שליטה קולית...</span>';
+                indicator.style.background = 'rgba(47, 107, 255, 0.10)';
+                indicator.style.borderColor = 'rgba(47, 107, 255, 0.25)';
+                indicator.style.color = 'rgba(47, 107, 255, 0.8)';
+                indicator.style.animation = 'pulse 2s infinite';
                 indicator.setAttribute('title', 'מנסה להפעיל שליטה קולית');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
             }
         }
 
@@ -4624,15 +4612,27 @@
             voiceRecognitionInitialized = true;
             updateVoiceIndicator();
 
-            // מילון פקודות
+            // מילון פקודות קוליות - כל הפקודות הזמינות במערכת
             voiceCommandDefinitions = [
-                { id: 'next-track', label: 'שיר הבא', phrases: ['next', 'הבא', 'שיר הבא', 'next song', 'הבא שיר'], action: voiceNextTrack },
-                { id: 'previous-track', label: 'שיר קודם', phrases: ['previous', 'קודם', 'שיר קודם', 'previous song', 'חזור'], action: voicePreviousTrack },
-                { id: 'play', label: 'מנגן', phrases: ['play', 'נגן', 'תנגן', 'תפעיל', 'הפעל'], action: voicePlay },
-                { id: 'pause', label: 'עצור', phrases: ['pause', 'stop', 'עצור', 'תעצור', 'עצירה', 'הפסק'], action: voicePause },
-                { id: 'mute', label: 'השתק', phrases: ['mute', 'השתק', 'שקט', 'השתק מוזיקה'], action: voiceToggleMute },
-                { id: 'next-playlist', label: 'פלייליסט הבא', phrases: ['next playlist', 'פלייליסט הבא', 'עבור פלייליסט', 'פלייליסט קדימה'], action: voiceNextPlaylist },
-                { id: 'previous-playlist', label: 'פלייליסט קודם', phrases: ['previous playlist', 'פלייליסט קודם', 'חזור פלייליסט', 'פלייליסט אחורה'], action: voicePreviousPlaylist }
+                // שליטה בשירים
+                { id: 'next-track', label: 'שיר הבא', feedback: '⏭️ מדלג לשיר הבא', phrases: ['next', 'הבא', 'שיר הבא', 'next song', 'הבא שיר', 'קדימה'], action: voiceNextTrack },
+                { id: 'previous-track', label: 'שיר קודם', feedback: '⏮️ חוזר לשיר הקודם', phrases: ['previous', 'קודם', 'שיר קודם', 'previous song', 'חזור', 'אחורה'], action: voicePreviousTrack },
+                
+                // שליטה בניגון
+                { id: 'play', label: 'נגן', feedback: '▶️ מפעיל נגן', phrases: ['play', 'נגן', 'תנגן', 'תפעיל', 'הפעל', 'המשך'], action: voicePlay },
+                { id: 'pause', label: 'עצור', feedback: '⏸️ עוצר נגן', phrases: ['pause', 'stop', 'עצור', 'תעצור', 'עצירה', 'הפסק', 'השהה'], action: voicePause },
+                
+                // שליטה בעוצמה
+                { id: 'mute', label: 'השתק', feedback: '🔇 משתיק', phrases: ['mute', 'השתק', 'שקט', 'השתק מוזיקה', 'בלי קול'], action: voiceToggleMute },
+                { id: 'volume-up', label: 'הגבר עוצמה', feedback: '🔊 מגביר עוצמה', phrases: ['volume up', 'הגבר', 'יותר חזק', 'חזק יותר', 'להגביר', 'הגבר קול'], action: () => changeVolume(15) },
+                { id: 'volume-down', label: 'הנמך עוצמה', feedback: '🔉 מנמיך עוצמה', phrases: ['volume down', 'הנמך', 'יותר חלש', 'חלש יותר', 'להנמיך', 'הנמך קול', 'נמוך'], action: () => changeVolume(-15) },
+                
+                // שליטה בפלייליסטים
+                { id: 'next-playlist', label: 'פלייליסט הבא', feedback: '📁 עובר לפלייליסט הבא', phrases: ['next playlist', 'פלייליסט הבא', 'עבור פלייליסט', 'פלייליסט קדימה', 'רשימה הבאה'], action: voiceNextPlaylist },
+                { id: 'previous-playlist', label: 'פלייליסט קודם', feedback: '📁 חוזר לפלייליסט הקודם', phrases: ['previous playlist', 'פלייליסט קודם', 'חזור פלייליסט', 'פלייליסט אחורה', 'רשימה קודמת'], action: voicePreviousPlaylist },
+                
+                // שליטה בערבוב
+                { id: 'shuffle', label: 'ערבוב שירים', feedback: '🔀 מצב ערבוב שירים', phrases: ['shuffle', 'ערבוב', 'ערבב', 'תערבב', 'ערבוב שירים', 'מצב אקראי'], action: () => toggleSongShuffle() }
             ];
 
             recognition.onstart = () => {
