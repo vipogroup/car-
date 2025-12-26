@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎶 נגן שירים לרכב 🚗</title>
+    <title>נגן שירים לרכב | Car Music Player</title>
     <!-- מניעת כיבוי מסך -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <!-- הגדרות PWA -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1db954">
+    <meta name="theme-color" content="#0C0F14">
     <link rel="apple-touch-icon" href="car-music-icon.png">
     <link rel="icon" type="image/png" href="car-music-icon.png">
     <!-- אפשר ניגון ברקע -->
     <meta name="mobile-web-app-background-audio" content="yes">
+    <!-- ספריית איקונים -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
             text-align: center;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
-            color: white;
+            background: linear-gradient(145deg, #0C0F14 0%, #0F1622 50%, #0C0F14 100%);
+            color: #EDEFF3;
             margin: 0;
             padding: 10px;
             display: flex;
@@ -35,31 +37,94 @@
             top: 0;
             left: 0;
             box-sizing: border-box;
-            transition: background 0.6s ease, color 0.6s ease;
+            transition: background 0.4s ease, color 0.4s ease;
+        }
+
+        .icon,
+        .inline-icon,
+        .icon-only {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon svg,
+        .inline-icon svg,
+        .icon-only svg {
+            width: 1.2em;
+            height: 1.2em;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .icon-only svg {
+            width: 1em;
+            height: 1em;
+        }
+
+        /* איקונים בתוך כפתורי שליטה */
+        .control-btn .icon-only svg,
+        .control-btn svg {
+            width: 22px !important;
+            height: 22px !important;
+            stroke: white !important;
+            stroke-width: 2.5 !important;
+            fill: none !important;
+        }
+
+        .control-btn .icon-only,
+        .control-btn [data-lucide] {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Lucide icons general styling */
+        [data-lucide] svg,
+        .lucide {
+            width: 1.2em;
+            height: 1.2em;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .inline-icon {
+            margin: 0 6px;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
         }
 
         @keyframes fadeSlideIn {
             from {
                 opacity: 0;
-                transform: translateY(40px) scale(0.98);
+                transform: translateY(12px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0) scale(1);
+                transform: translateY(0);
             }
         }
 
         @keyframes ripplePulse {
             0% {
                 transform: scale(0);
-                opacity: 0.5;
-            }
-            80% {
-                transform: scale(10);
-                opacity: 0.15;
+                opacity: 0.3;
             }
             100% {
-                transform: scale(14);
+                transform: scale(4);
                 opacity: 0;
             }
         }
@@ -73,105 +138,78 @@
             }
         }
 
-        /* Theme variations */
-        body.theme-classic {
-            background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+        /* Theme: Dark Graphite (Default) - Premium automotive style */
+        /* Base styles already applied to body */
+
+        /* Theme: Light Titanium (Day Mode) */
+        body.theme-light {
+            background: linear-gradient(145deg, #E8EAED 0%, #F5F6F8 50%, #E8EAED 100%);
+            color: #1A1D24;
         }
 
-        body.theme-classic .music-player {
-            background: linear-gradient(145deg, rgba(20, 33, 61, 0.95), rgba(15, 24, 43, 0.98));
-            border: 1px solid rgba(65, 90, 119, 0.5);
-            box-shadow: 0 20px 60px rgba(8, 15, 26, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        body.theme-light .music-player {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98));
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 18px 60px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
 
-        body.theme-classic .control-btn {
-            background: linear-gradient(145deg, #4cc9f0, #4361ee);
-            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.45);
+        body.theme-light .control-btn {
+            background: rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: #1A1D24;
         }
 
-        body.theme-classic .playlist-name {
-            color: #4cc9f0;
-            text-shadow: 0 0 20px rgba(76, 201, 240, 0.35);
+        body.theme-light .control-btn:hover {
+            background: rgba(0, 0, 0, 0.10);
         }
 
-        body.theme-neon {
-            background: radial-gradient(circle at top, #1a2a6c, #b21f1f, #fdbb2d);
+        body.theme-light .control-btn.play-btn {
+            background: #2F6BFF;
+            border: none;
+            color: #FFFFFF;
         }
 
-        body.theme-neon .music-player {
-            background: rgba(10, 10, 10, 0.85);
-            border: 1px solid rgba(253, 187, 45, 0.45);
-            box-shadow: 0 25px 80px rgba(15, 15, 15, 0.7), 0 0 40px rgba(253, 187, 45, 0.25);
+        body.theme-light .playlist-name {
+            color: #2F6BFF;
         }
 
-        body.theme-neon .control-btn {
-            background: linear-gradient(145deg, #f72585, #b5179e);
-            box-shadow: 0 6px 18px rgba(247, 37, 133, 0.55);
+        body.theme-light .current-song {
+            color: #1A1D24;
         }
 
-        body.theme-neon .playlist-name {
-            color: #f72585;
-            text-shadow: 0 0 25px rgba(247, 37, 133, 0.45);
+        body.theme-light .current-song-container {
+            background: rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.06);
         }
 
-        body.theme-neon .current-song-container {
-            border-right-color: #f72585;
+        body.theme-light .current-song-container::before {
+            background: #2F6BFF;
         }
 
-        body.theme-classic .current-song-container {
-            border-right-color: #4cc9f0;
+        body.theme-light .volume-slider {
+            background: rgba(0, 0, 0, 0.12);
         }
 
-        body.theme-glass {
-            background: linear-gradient(120deg, #141e30, #243b55);
+        body.theme-light .volume-slider::-webkit-slider-thumb {
+            background: #2F6BFF;
         }
 
-        body.theme-glass .music-player {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(25px);
+        body.theme-light .volume-slider::-moz-range-thumb {
+            background: #2F6BFF;
         }
 
-        body.theme-glass .control-btn {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.18));
-            color: #0d1b2a;
-            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.25);
-        }
-
-        body.theme-glass .playlist-name {
-            color: #a8dadc;
-            text-shadow: 0 0 12px rgba(168, 218, 220, 0.6);
-        }
-
-        body.theme-forest {
-            background: linear-gradient(160deg, #0b3d2e, #0f5d3f, #0c3b2a);
-        }
-
-        body.theme-forest .music-player {
-            background: linear-gradient(145deg, rgba(12, 59, 42, 0.95), rgba(6, 28, 20, 0.95));
-            border: 1px solid rgba(52, 168, 83, 0.45);
-            box-shadow: 0 25px 70px rgba(5, 20, 14, 0.7);
-        }
-
-        body.theme-forest .control-btn {
-            background: linear-gradient(145deg, #34a853, #0f9d58);
-            box-shadow: 0 6px 18px rgba(15, 157, 88, 0.45);
-        }
-
-        body.theme-forest .playlist-name {
-            color: #34a853;
-            text-shadow: 0 0 18px rgba(52, 168, 83, 0.5);
+        body.theme-light .video-frame {
+            background: linear-gradient(145deg, #E0E2E6, #D4D6DA);
         }
 
 
         .music-player {
             width: 100%;
             max-width: 500px;
-            background: linear-gradient(145deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.98));
-            padding: 15px;
-            border-radius: 24px;
-            border: 1px solid rgba(29, 185, 84, 0.3);
+            background: linear-gradient(145deg, rgba(18, 22, 30, 0.95), rgba(12, 15, 20, 0.98));
+            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -179,13 +217,12 @@
             overflow: visible;
             position: relative;
             z-index: 1;
-            gap: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 
-                        0 0 40px rgba(29, 185, 84, 0.1),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            opacity: 0.8;
-            animation: fadeSlideIn 0.8s ease forwards;
+            gap: 14px;
+            box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(16px);
+            opacity: 1;
+            animation: fadeSlideIn 0.5s ease forwards;
         }
 
         .layout-columns {
@@ -212,14 +249,14 @@
             height: 25vh;
             min-height: 180px;
             max-height: 200px;
-            border-radius: 16px;
+            border-radius: 14px;
             border: none;
             overflow: hidden;
-            background: linear-gradient(145deg, #0d0d0d, #1a1a1a);
+            background: linear-gradient(145deg, #0A0C10, #12161E);
             margin-bottom: 5px;
             position: relative;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
-                        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.03);
         }
         
         .video-frame iframe {
@@ -260,21 +297,20 @@
         }
 
         .control-btn {
-            background: linear-gradient(145deg, #1ed760, #1db954);
-            color: white;
-            border: none;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(237, 239, 243, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.10);
             border-radius: 50%;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4),
-                        0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+            box-shadow: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
             letter-spacing: 0.2px;
-            width: 44px;
-            height: 44px;
+            width: 52px;
+            height: 52px;
             font-size: 22px;
             padding: 0;
             position: relative;
@@ -283,36 +319,47 @@
 
         .control-btn.icon-btn,
         .control-btn.pill-btn {
-            width: 44px;
-            height: 44px;
+            width: 52px;
+            height: 52px;
             font-size: 22px;
         }
 
+        /* Play button - accent color */
+        #playPauseBtn {
+            background: #2F6BFF;
+            border: none;
+            color: #FFFFFF;
+            box-shadow: 0 4px 16px rgba(47, 107, 255, 0.25);
+        }
+
+        #playPauseBtn:hover {
+            background: #4A7FFF;
+            box-shadow: 0 6px 20px rgba(47, 107, 255, 0.35);
+        }
+
         .control-btn:hover {
-            background: linear-gradient(145deg, #22e065, #1ed760);
-            box-shadow: 0 6px 20px rgba(29, 185, 84, 0.5),
-                        0 2px 8px rgba(0, 0, 0, 0.3);
-            transform: translateY(-2px) scale(1.05);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.15);
         }
         
         .control-btn:active {
-            transform: translateY(0) scale(0.98);
-            box-shadow: 0 2px 8px rgba(29, 185, 84, 0.3);
+            transform: scale(0.96);
+            background: rgba(255, 255, 255, 0.06);
         }
 
         .control-btn::after {
             content: '';
             position: absolute;
-            width: 12px;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.55);
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             opacity: 0;
             pointer-events: none;
         }
 
         .control-btn:active::after {
-            animation: ripplePulse 0.45s ease-out forwards;
+            animation: ripplePulse 0.3s ease-out forwards;
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%) scale(0);
@@ -322,38 +369,39 @@
             margin: 8px auto 0;
             padding: 10px 20px;
             border-radius: 25px;
-            border: none;
-            background: linear-gradient(135deg, #3498db, #2ecc71);
-            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(237, 239, 243, 0.92);
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: none;
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }
 
         .update-check-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .update-check-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            transform: scale(0.98);
         }
 
-        .day-mode .update-check-btn {
-            background: linear-gradient(135deg, #6a5acd, #20b2aa);
-            color: #fff;
+        .theme-light .update-check-btn {
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.08);
+            color: #1A1D24;
         }
 
         .microphone-modal-backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.78);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -362,30 +410,32 @@
         }
 
         .microphone-modal {
-            background: linear-gradient(145deg, #1e1e1e, #2c2c2c);
+            background: linear-gradient(145deg, rgba(18, 22, 30, 0.98), rgba(12, 15, 20, 0.98));
             border-radius: 18px;
-            border: 2px solid rgba(29, 185, 84, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             max-width: 420px;
             width: 100%;
-            padding: 25px;
-            color: #fff;
+            padding: 24px;
+            color: #EDEFF3;
             position: relative;
-            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
             text-align: right;
         }
 
         .microphone-modal h2 {
             margin: 0 0 15px;
-            font-size: 22px;
+            font-size: 18px;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .microphone-modal p {
-            font-size: 15px;
+            font-size: 14px;
             line-height: 1.6;
             margin: 0 0 15px;
+            color: rgba(237, 239, 243, 0.85);
         }
 
         .microphone-modal-actions {
@@ -399,59 +449,98 @@
         .microphone-modal-primary,
         .microphone-modal-secondary {
             border: none;
-            border-radius: 14px;
+            border-radius: 10px;
             padding: 10px 16px;
-            font-size: 15px;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.2s ease;
         }
 
         .microphone-modal-primary {
-            background: linear-gradient(135deg, #1db954, #0b7d3b);
-            color: #fff;
-            box-shadow: 0 6px 18px rgba(29, 185, 84, 0.35);
+            background: #2F6BFF;
+            color: #FFFFFF;
+            box-shadow: 0 4px 16px rgba(47, 107, 255, 0.25);
         }
 
         .microphone-modal-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 22px rgba(29, 185, 84, 0.45);
+            background: #4A7FFF;
         }
 
         .microphone-modal-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #f1f1f1;
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(237, 239, 243, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.10);
         }
 
         .microphone-modal-secondary:hover {
-            transform: translateY(-1px);
-            background: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.12);
         }
 
         .microphone-modal-close {
             position: absolute;
             top: 12px;
             left: 12px;
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-size: 22px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            color: rgba(237, 239, 243, 0.92);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .microphone-modal-close:hover {
+            background: rgba(255, 255, 255, 0.12);
         }
 
         .microphone-settings-guide {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
             padding: 15px;
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.7;
         }
 
         .microphone-settings-guide h3 {
             margin-top: 0;
-            font-size: 16px;
-            color: #1db954;
+            font-size: 14px;
+            font-weight: 500;
+            color: #2F6BFF;
+        }
+
+        .microphone-settings-guide h3 .inline-icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: #2F6BFF;
+            stroke-width: 2;
+        }
+
+        .microphone-modal h2 .inline-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: #2F6BFF;
+            stroke-width: 2;
+        }
+
+        .microphone-modal-primary .icon-only svg,
+        .microphone-modal-secondary .icon-only svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        .microphone-modal-close .icon-only svg {
+            width: 22px;
+            height: 22px;
+            stroke: white;
+            stroke-width: 2;
         }
 
         .microphone-settings-guide ul {
@@ -486,49 +575,70 @@
         }
 
         .shuffle-btn.active {
-            background: #0b6838 !important;
-            box-shadow: 0 0 12px #0b6838;
+            background: rgba(47, 107, 255, 0.15) !important;
+            border-color: rgba(47, 107, 255, 0.4) !important;
+            color: #2F6BFF !important;
+        }
+
+        .shuffle-btn.active::before {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: #2F6BFF;
+            border-radius: 50%;
         }
 
         .playlist-name {
             margin: 8px 0;
-            font-size: 1.1em;
-            color: #1ed760;
-            font-weight: 600;
-            text-shadow: 0 0 20px rgba(29, 185, 84, 0.3);
-            letter-spacing: 0.5px;
-            font-weight: bold;
+            font-size: 14px;
+            color: #2F6BFF;
+            font-weight: 500;
+            letter-spacing: 0.3px;
             padding: 5px;
-            display: block !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             visibility: visible !important;
             width: 100%;
         }
 
+        .playlist-name .inline-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: #2F6BFF;
+            stroke-width: 2;
+        }
+
+        .theme-light .playlist-name .inline-icon svg {
+            stroke: #2F6BFF;
+        }
+
         .back-btn {
-            background: #ff3333;
+            background: rgba(255, 255, 255, 0.08);
             padding: 8px 12px;
             border-radius: 10px;
             cursor: pointer;
             margin-top: 5px;
             font-size: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            border: none;
-            color: white;
+            box-shadow: none;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            color: rgba(237, 239, 243, 0.92);
+            transition: all 0.2s ease;
         }
 
         .back-btn:hover {
-            background: #cc0000;
+            background: rgba(255, 255, 255, 0.12);
         }
 
-        /* אפקט הבהוב לכפתור שנלחץ */
-        @keyframes flashEffect {
-            0% { background-color: #1db954; }
-            50% { background-color: #004080; }
-            100% { background-color: #1db954; }
-        }
-
+        /* Subtle press feedback - no flashy effects */
         .active-effect {
-            animation: flashEffect 0.3s ease-in-out;
+            opacity: 0.8;
+            transition: opacity 0.15s ease;
         }
         
         /* בעיית תצוגה - תיקון אלמנטים שלא מוצגים */
@@ -542,42 +652,48 @@
         
         /* סגנון תצוגת שיר נוכחי */
         .current-song-container {
-            background: linear-gradient(145deg, rgba(0, 0, 0, 0.4), rgba(20, 20, 30, 0.5));
-            padding: 10px 15px;
-            border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
             margin: 5px 0;
-            border-right: 2px solid #1db954;
             width: 100%;
             text-align: right;
             display: block !important;
             visibility: visible !important;
+            position: relative;
         }
-        
-        .day-mode .current-song-container {
-            background: rgba(0, 0, 0, 0.1);
-            border-left: 3px solid #4169E1;
+
+        /* Subtle accent indicator instead of thick border */
+        .current-song-container::before {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: #2F6BFF;
+            border-radius: 2px;
         }
         
         .current-song-label {
-            font-size: 0.8em;
-            opacity: 0.8;
+            font-size: 12px;
+            color: rgba(237, 239, 243, 0.68);
+            margin-bottom: 4px;
         }
         
         .current-song {
-            font-weight: bold;
-            font-size: 1em;
-            color: #1db954;
+            font-weight: 600;
+            font-size: 20px;
+            color: #EDEFF3;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
             display: inline-block;
-            max-width: 100%;
-            overflow: hidden;
-            white-space: nowrap;
             position: relative;
+            line-height: 1.3;
         }
 
         .current-song.marquee-text {
@@ -590,7 +706,7 @@
             width: 100%;
             display: flex !important;
             align-items: center;
-            gap: 5px;
+            gap: 10px;
             margin: 5px 0;
             justify-content: center;
             visibility: visible !important;
@@ -601,42 +717,73 @@
             -moz-appearance: none;
             appearance: none;
             width: 100%;
-            height: 6px;
-            background: #444;
-            border-radius: 5px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 2px;
             outline: none;
         }
         
         .volume-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 25px;
-            height: 25px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            background: #1db954;
+            background: #EDEFF3;
             cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         
         .volume-slider::-moz-range-thumb {
-            width: 25px;
-            height: 25px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            background: #1db954;
+            background: #EDEFF3;
             cursor: pointer;
             border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         
-        .day-mode .volume-slider::-webkit-slider-thumb {
-            background: #4169E1;
+        .theme-light .volume-slider::-webkit-slider-thumb {
+            background: #2F6BFF;
         }
         
-        .day-mode .volume-slider::-moz-range-thumb {
-            background: #4169E1;
+        .theme-light .volume-slider::-moz-range-thumb {
+            background: #2F6BFF;
         }
         
         .volume-icon {
             font-size: 24px;
             cursor: pointer;
+            background: transparent;
+            border: none;
+            padding: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(237, 239, 243, 0.68);
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .volume-icon:hover {
+            color: rgba(237, 239, 243, 0.92);
+        }
+
+        .volume-icon .icon-only svg,
+        .volume-icon svg {
+            width: 22px !important;
+            height: 22px !important;
+            stroke: currentColor !important;
+            stroke-width: 2 !important;
+        }
+
+        .theme-light .volume-icon {
+            color: rgba(26, 29, 36, 0.68);
+        }
+
+        .theme-light .volume-icon:hover {
+            color: #1A1D24;
         }
         
         /* סגנון קישור התקנה למסך הבית */
@@ -644,44 +791,43 @@
             position: fixed;
             bottom: 24px;
             left: 24px;
-            background: linear-gradient(135deg, rgba(29, 185, 84, 0.95), rgba(10, 115, 58, 0.95));
-            color: white;
+            background: linear-gradient(145deg, rgba(18, 22, 30, 0.98), rgba(12, 15, 20, 0.98));
+            color: #EDEFF3;
             padding: 18px 20px;
-            border-radius: 20px;
-            box-shadow: 0 18px 35px rgba(29, 185, 84, 0.35);
+            border-radius: 16px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
             display: none;
             z-index: 1200;
-            animation: fadeIn 0.5s;
+            animation: fadeIn 0.4s ease;
             direction: rtl;
             text-align: right;
             max-width: 320px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
         }
 
         .install-prompt button {
-            background: white;
-            color: #0a1910;
+            background: #2F6BFF;
+            color: #FFFFFF;
             border: none;
             padding: 10px 18px;
             border-radius: 999px;
             margin-top: 12px;
             cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 16px rgba(47, 107, 255, 0.25);
         }
 
         .install-prompt button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+            background: #4A7FFF;
+            box-shadow: 0 6px 20px rgba(47, 107, 255, 0.35);
         }
 
-        .day-mode .install-prompt {
-            background: linear-gradient(135deg, rgba(65, 105, 225, 0.95), rgba(64, 148, 255, 0.95));
-        }
-
-        .day-mode .install-prompt button {
-            color: #1d2a50;
+        .theme-light .install-prompt {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.98));
+            color: #1A1D24;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.15);
         }
         
         @keyframes fadeIn {
@@ -689,15 +835,15 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        .day-mode .current-song {
-            color: #4169E1;
+        .theme-light .current-song {
+            color: #1A1D24;
         }
 
         /* תפריט הגדרות */
         .settings-menu {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 16px;
+            right: 16px;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
@@ -706,33 +852,46 @@
         }
 
         .settings-toggle {
-            background: rgba(0, 0, 0, 0.6);
-            color: #fff;
-            border: none;
-            border-radius: 14px;
-            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(237, 239, 243, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 12px;
+            padding: 10px 14px;
             font-size: 22px;
             cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            box-shadow: none;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(12px);
+        }
+
+        .settings-toggle .icon-only svg,
+        .settings-toggle svg {
+            width: 22px !important;
+            height: 22px !important;
+            stroke: currentColor !important;
+            stroke-width: 2 !important;
         }
 
         .settings-toggle:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .settings-dropdown {
             display: none;
             flex-direction: column;
-            gap: 8px;
-            background: rgba(34, 34, 34, 0.95);
+            gap: 6px;
+            background: rgba(18, 22, 30, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 14px;
-            padding: 14px 16px;
-            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+            padding: 12px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
             min-width: 200px;
             direction: rtl;
+            backdrop-filter: blur(16px);
         }
 
         .settings-dropdown.open {
@@ -740,19 +899,28 @@
         }
 
         .settings-dropdown button {
-            background: linear-gradient(135deg, #1db954, #0b7d3b);
-            color: #fff;
-            border: none;
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(237, 239, 243, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
             padding: 10px 12px;
-            font-size: 15px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 500;
             text-align: right;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 10px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.2s ease;
+        }
+
+        .settings-dropdown button .inline-icon svg,
+        .settings-dropdown button .icon-only svg,
+        .settings-dropdown button svg {
+            width: 18px !important;
+            height: 18px !important;
+            stroke: currentColor !important;
+            stroke-width: 2 !important;
         }
 
         .settings-dropdown button span:first-child {
@@ -760,40 +928,42 @@
         }
 
         .settings-dropdown button:hover {
-            transform: translateX(-3px);
-            box-shadow: 0 8px 18px rgba(29, 185, 84, 0.4);
+            background: rgba(255, 255, 255, 0.10);
+            border-color: rgba(255, 255, 255, 0.10);
         }
 
-        .day-mode .settings-toggle {
-            background: rgba(255, 255, 255, 0.85);
-            color: #1f3b8a;
-            box-shadow: 0 4px 14px rgba(65, 105, 225, 0.35);
+        .theme-light .settings-toggle {
+            background: rgba(0, 0, 0, 0.06);
+            color: #1A1D24;
+            border-color: rgba(0, 0, 0, 0.08);
         }
 
-        .day-mode .settings-toggle:hover {
-            background: rgba(255, 255, 255, 0.95);
+        .theme-light .settings-toggle:hover {
+            background: rgba(0, 0, 0, 0.10);
         }
 
-        .day-mode .settings-dropdown {
-            background: rgba(255, 255, 255, 0.97);
-            box-shadow: 0 14px 28px rgba(65, 105, 225, 0.35);
+        .theme-light .settings-dropdown {
+            background: rgba(255, 255, 255, 0.98);
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.15);
         }
 
-        .day-mode .settings-dropdown button {
-            background: linear-gradient(135deg, #5a6ff7, #4dd2ff);
-            color: #0f1b3d;
+        .theme-light .settings-dropdown button {
+            background: rgba(0, 0, 0, 0.04);
+            color: #1A1D24;
+            border-color: rgba(0, 0, 0, 0.06);
         }
 
-        .day-mode .settings-dropdown button:hover {
-            box-shadow: 0 8px 18px rgba(90, 111, 247, 0.35);
+        .theme-light .settings-dropdown button:hover {
+            background: rgba(0, 0, 0, 0.08);
         }
 
         /* Theme selector modal */
         .theme-selector-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -806,14 +976,15 @@
         }
 
         .theme-selector-modal {
-            background: rgba(16, 16, 30, 0.95);
-            border-radius: 20px;
-            padding: 25px;
-            max-width: 520px;
+            background: linear-gradient(145deg, rgba(18, 22, 30, 0.98), rgba(12, 15, 20, 0.98));
+            border-radius: 18px;
+            padding: 24px;
+            max-width: 360px;
             width: 100%;
-            color: #fff;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            color: #EDEFF3;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
         }
 
         .theme-selector-header {
@@ -825,120 +996,163 @@
 
         .theme-selector-header h3 {
             margin: 0;
-            font-size: 1.4rem;
+            font-size: 18px;
+            font-weight: 600;
         }
 
         .theme-selector-close {
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-size: 26px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            color: rgba(237, 239, 243, 0.92);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-selector-close:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .theme-selector-close .icon-only svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        .theme-selector-header h3 .inline-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: #2F6BFF;
+            stroke-width: 2;
         }
 
         .theme-card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .theme-card {
-            border-radius: 16px;
-            padding: 12px;
-            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             cursor: pointer;
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            transition: transform 0.2s ease, border-color 0.2s ease;
-            background: rgba(255, 255, 255, 0.05);
+            align-items: center;
+            gap: 14px;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.04);
         }
 
         .theme-card:hover {
-            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.12);
         }
 
         .theme-card.active {
-            border-color: #1ed760;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+            border-color: rgba(47, 107, 255, 0.5);
+            background: rgba(47, 107, 255, 0.08);
         }
 
         .theme-preview {
-            height: 70px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #1ed760, #1db954);
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            flex-shrink: 0;
             position: relative;
             overflow: hidden;
         }
 
         .theme-preview::after,
         .theme-preview::before {
-            content: '';
-            position: absolute;
-            border-radius: 50%;
-            opacity: 0.6;
+            display: none;
         }
 
+        /* Dark Graphite theme preview */
+        .theme-card[data-theme="dark"] .theme-preview,
         .theme-card[data-theme="modern"] .theme-preview {
-            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e);
+            background: linear-gradient(145deg, #0C0F14, #0F1622);
         }
 
-        .theme-card[data-theme="classic"] .theme-preview {
-            background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+        /* Light Titanium theme preview */
+        .theme-card[data-theme="light"] .theme-preview {
+            background: linear-gradient(145deg, #E8EAED, #F5F6F8);
         }
 
-        .theme-card[data-theme="neon"] .theme-preview {
-            background: radial-gradient(circle at 20% 20%, #f72585, #7209b7, #3a0ca3);
-        }
-
-        .theme-card[data-theme="glass"] .theme-preview {
-            background: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,255,255,0.15));
-        }
-
-        .theme-card[data-theme="forest"] .theme-preview {
-            background: linear-gradient(145deg, #0b3d2e, #0f5d3f, #34a853);
+        .theme-card-info {
+            flex: 1;
         }
 
         .theme-card h4 {
-            margin: 0;
-            font-size: 1rem;
+            margin: 0 0 4px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #EDEFF3;
         }
 
         .theme-card p {
             margin: 0;
-            font-size: 0.85rem;
-            color: #d0d0d0;
+            font-size: 13px;
+            color: rgba(237, 239, 243, 0.68);
         }
 
-        /* סגנון למצב יום */
+        .theme-card.active h4 {
+            color: #2F6BFF;
+        }
+
+        /* Legacy day-mode support - redirects to theme-light */
         .day-mode {
-            background: linear-gradient(135deg, #89CFF0, #6495ED, #4169E1) !important;
+            background: linear-gradient(145deg, #E8EAED 0%, #F5F6F8 50%, #E8EAED 100%) !important;
+            color: #1A1D24;
         }
 
         .day-mode .music-player {
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-            box-shadow: 0 0 20px #4169E1;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98));
+            color: #1A1D24;
+            box-shadow: 0 18px 60px rgba(0, 0, 0, 0.12);
+            border-color: rgba(0, 0, 0, 0.08);
         }
 
         .day-mode .control-btn {
-            background: #4169E1;
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.08);
+            color: #1A1D24;
         }
 
         .day-mode .control-btn:hover {
-            background: #1E90FF;
+            background: rgba(0, 0, 0, 0.10);
+        }
+
+        .day-mode #playPauseBtn {
+            background: #2F6BFF;
+            color: #FFFFFF;
         }
 
         .day-mode .playlist-name {
-            color: #4169E1;
+            color: #2F6BFF;
         }
 
-        .day-mode .back-btn {
-            background: #FF6347;
+        .day-mode .current-song {
+            color: #1A1D24;
         }
 
-        .day-mode .back-btn:hover {
-            background: #FF4500;
+        .day-mode .current-song-container {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.06);
+        }
+
+        .day-mode .current-song-container::before {
+            background: #2F6BFF;
+        }
+
+        .day-mode .current-song-label {
+            color: rgba(26, 29, 36, 0.68);
         }
 
         /* התאמה למסכים קטנים */
@@ -956,9 +1170,14 @@
         @media (max-width: 768px) {
             .control-btn.icon-btn,
             .control-btn.pill-btn {
-                width: 40px;
-                height: 40px;
+                width: 48px;
+                height: 48px;
                 font-size: 20px;
+            }
+
+            .control-btn .icon-only svg {
+                width: 24px;
+                height: 24px;
             }
 
             .settings-menu {
@@ -968,6 +1187,34 @@
 
             .settings-dropdown {
                 min-width: 170px;
+            }
+
+            .control-row,
+            .control-buttons {
+                gap: 10px;
+            }
+        }
+
+        /* התאמה למסכי מובייל קטנים */
+        @media (max-width: 400px) {
+            .control-btn.icon-btn,
+            .control-btn.pill-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            .control-btn .icon-only svg {
+                width: 22px;
+                height: 22px;
+            }
+
+            .control-row,
+            .control-buttons {
+                gap: 8px;
+            }
+
+            .music-player {
+                padding: 10px;
             }
         }
         
@@ -980,58 +1227,98 @@
             .control-buttons {
                 margin: 10px auto;
             }
-            
-            /* אפקטים למעבר עכבר על כפתורים */
-            .control-btn:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-            }
         }
         
         /* התאמה למצב רוחב (Landscape) במובייל */
         @media (orientation: landscape) and (max-height: 500px) {
+            body {
+                padding: 5px;
+            }
+
             .music-player {
                 max-width: 100%;
                 width: 100%;
                 max-height: 100vh;
-                border-radius: 0;
-                padding: 5px 15px;
+                border-radius: 14px;
+                padding: 10px 16px;
                 flex-direction: row;
                 flex-wrap: wrap;
-                justify-content: center;
+                justify-content: space-between;
                 gap: 10px;
+                overflow-y: auto;
             }
             
             .video-frame {
                 width: 45%;
-                height: 70vh;
+                height: 65vh;
                 max-height: none;
-                min-height: auto;
+                min-height: 150px;
+                border-radius: 12px;
             }
             
             .control-panel {
-                width: 50%;
+                width: 52%;
                 margin: 0;
                 justify-content: center;
+                gap: 8px;
+            }
+
+            .control-btn.icon-btn,
+            .control-btn.pill-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            .control-btn .icon-only svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            .control-row,
+            .control-buttons {
+                gap: 8px;
             }
             
             h2 {
                 width: 100%;
-                font-size: 16px !important;
+                font-size: 14px !important;
                 margin: 2px 0 !important;
             }
             
             .playlist-name {
                 width: 100%;
                 font-size: 12px;
+                padding: 3px;
             }
             
             .current-song-container {
                 width: 100%;
+                padding: 8px 12px;
+            }
+
+            .current-song {
+                font-size: 16px;
+            }
+
+            .current-song-label {
+                font-size: 11px;
             }
             
             #volumeControl {
                 width: 100%;
+            }
+
+            .settings-menu {
+                top: 5px;
+                right: 5px;
+            }
+
+            .settings-toggle {
+                padding: 8px 10px;
+            }
+
+            #playerTitle {
+                display: none;
             }
         }
 
@@ -1039,27 +1326,32 @@
             .layout-columns {
                 flex-direction: row;
                 align-items: flex-start;
-                gap: 24px;
+                gap: 20px;
             }
 
             .media-column {
-                width: 52%;
+                width: 50%;
             }
 
             .interface-column {
-                width: 48%;
+                width: 50%;
                 justify-content: space-between;
-                gap: 18px;
+                gap: 14px;
             }
 
             .video-frame {
                 height: 65vh;
-                min-height: 320px;
+                min-height: 280px;
                 max-height: none;
+                border-radius: 14px;
             }
 
             .control-panel {
                 margin: 0;
+            }
+
+            .current-song {
+                font-size: 18px;
             }
 
             .playlist-name,
@@ -1106,7 +1398,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.92);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
             z-index: 2000;
             overflow-y: auto;
             padding: 10px;
@@ -1116,60 +1409,75 @@
         .playlist-modal-container {
             max-width: 500px;
             margin: 10px auto;
-            background: linear-gradient(145deg, #2a2a3a, #1a1a2a);
+            background: linear-gradient(145deg, rgba(18, 22, 30, 0.98), rgba(12, 15, 20, 0.98));
             padding: 20px;
-            border-radius: 20px;
-            border: 2px solid #1db954;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
         }
 
         .playlist-modal-title {
-            color: #1db954;
+            color: #EDEFF3;
             text-align: center;
-            font-size: 1.4rem;
+            font-size: 18px;
+            font-weight: 600;
             margin: 0 0 15px 0;
         }
 
         .playlist-modal-section {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.04);
             padding: 15px;
             border-radius: 12px;
             margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .playlist-section-title {
-            color: #fff;
+            color: #EDEFF3;
             margin: 0 0 12px 0;
-            font-size: 1rem;
+            font-size: 15px;
+            font-weight: 500;
         }
 
         .playlist-input {
             width: 100%;
-            padding: 12px;
+            padding: 12px 14px;
             margin-bottom: 10px;
             border-radius: 10px;
-            border: 1px solid #1db954;
-            background: #333;
-            color: white;
-            font-size: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(255, 255, 255, 0.06);
+            color: #EDEFF3;
+            font-size: 15px;
             box-sizing: border-box;
+            transition: all 0.2s ease;
         }
 
         .playlist-input:focus {
             outline: none;
-            border-color: #1ed760;
-            box-shadow: 0 0 10px rgba(29, 185, 84, 0.3);
+            border-color: rgba(47, 107, 255, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .playlist-input::placeholder {
+            color: rgba(237, 239, 243, 0.45);
         }
 
         .playlist-btn {
             padding: 12px 20px;
             border: none;
             border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.2s ease;
+            color: white;
+        }
+
+        .playlist-btn .icon-only svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
         }
 
         .playlist-btn:active {
@@ -1178,22 +1486,45 @@
 
         .playlist-btn-primary {
             width: 100%;
-            background: linear-gradient(135deg, #1db954, #1ed760);
+            background: #2F6BFF;
             color: white;
-            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
+            box-shadow: 0 4px 16px rgba(47, 107, 255, 0.25);
+        }
+
+        .playlist-btn-primary:hover {
+            background: #4A7FFF;
         }
 
         .playlist-btn-search {
-            background: #ff0000;
-            color: white;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            color: rgba(237, 239, 243, 0.92);
             min-width: 50px;
         }
 
+        .playlist-btn-search:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
         .playlist-btn-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            color: rgba(237, 239, 243, 0.92);
             width: 100%;
-            background: #555;
-            color: white;
-            margin-top: 5px;
+            margin-top: 10px;
+        }
+
+        .playlist-btn-close:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .playlist-section-title .inline-icon svg,
+        .playlist-modal-title .inline-icon svg,
+        .playlist-hint .inline-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: #2F6BFF;
+            stroke-width: 2;
         }
 
         .playlist-search-row {
@@ -1274,6 +1605,14 @@
             align-items: center;
             justify-content: center;
             transition: transform 0.2s;
+            color: white;
+        }
+
+        .playlist-item-btn .icon-only svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+            stroke-width: 2;
         }
 
         .playlist-item-btn:active {
@@ -1281,11 +1620,35 @@
         }
 
         .playlist-item-btn-edit {
-            background: #3498db;
+            background: rgba(47, 107, 255, 0.2);
+            border: 1px solid rgba(47, 107, 255, 0.3);
         }
 
         .playlist-item-btn-delete {
-            background: #e74c3c;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .playlist-item-name {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .playlist-item-name .inline-icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: #2F6BFF;
+            stroke-width: 2;
+        }
+
+        .playlist-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .playlist-item-meta {
+            color: rgba(237, 239, 243, 0.68);
         }
 
         /* התאמה למובייל */
@@ -1372,43 +1735,42 @@
 
         .permission-notification h3 {
             margin: 0 0 12px 0;
-            font-size: 22px;
-            color: #1ed760;
+            font-size: 18px;
+            font-weight: 600;
+            color: #EDEFF3;
         }
 
         .permission-notification p {
             margin: 8px 0;
             line-height: 1.5;
-            color: #d4d4d4;
+            color: rgba(237, 239, 243, 0.85);
         }
 
         .permission-notification .permission-list {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 18px 16px;
-            border-radius: 16px;
-            margin: 18px 0;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
             text-align: right;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .permission-notification button {
-            background: linear-gradient(135deg, #1ed760, #1db954);
-            color: #0a1910;
+            background: #2F6BFF;
+            color: #FFFFFF;
             border: none;
-            padding: 12px 32px;
-            border-radius: 999px;
-            font-size: 16px;
-            font-weight: bold;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 18px;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-            box-shadow: 0 10px 20px rgba(29, 185, 84, 0.35);
+            margin-top: 16px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 16px rgba(47, 107, 255, 0.25);
         }
 
         .permission-notification button:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 12px 26px rgba(29, 185, 84, 0.45);
+            background: #4A7FFF;
         }
 
         /* באנר עדכון */
@@ -1417,13 +1779,15 @@
             top: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            padding: 15px;
+            background: linear-gradient(145deg, rgba(18, 22, 30, 0.98), rgba(12, 15, 20, 0.98));
+            color: #EDEFF3;
+            padding: 16px;
             text-align: center;
             z-index: 10001;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            animation: slideDown 0.5s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            animation: slideDown 0.4s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
         }
 
         @keyframes slideDown {
@@ -1436,38 +1800,66 @@
         }
 
         #updateBanner button {
-            background: white;
-            color: #3498db;
+            background: #2F6BFF;
+            color: #FFFFFF;
             border: none;
             padding: 10px 20px;
             margin: 0 5px;
-            border-radius: 20px;
-            font-weight: bold;
+            border-radius: 10px;
+            font-weight: 600;
             cursor: pointer;
             font-size: 14px;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+        }
+
+        #updateBanner button .icon-only svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        #updateBanner .inline-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: #2F6BFF;
+            stroke-width: 2;
         }
 
         #updateBanner button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            background: #4A7FFF;
         }
 
         #updateBanner .dismiss-btn {
-            background: transparent;
-            color: white;
-            border: 2px solid white;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(237, 239, 243, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.10);
         }
 
-        /* אנימציה לאינדיקטור קולי */
+        #updateBanner .dismiss-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        #updateBanner .dismiss-btn .icon-only svg {
+            stroke: currentColor;
+        }
+
+        /* Voice indicator icons */
+        #voiceIndicator .inline-icon svg,
+        #voiceCommand .inline-icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: #2F6BFF;
+            stroke-width: 2;
+        }
+
+        /* Calm pulse animation for voice indicator */
         @keyframes pulse {
             0%, 100% {
                 opacity: 1;
-                transform: scale(1);
             }
             50% {
                 opacity: 0.7;
-                transform: scale(1.05);
             }
         }
 
@@ -1476,8 +1868,9 @@
 <body>
     <!-- באנר עדכון -->
     <div id="updateBanner" style="display: none;">
-        <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">
-            🔄 עדכון חדש זמין!
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; justify-content: center;">
+            <span class="inline-icon" data-lucide="refresh-cw" aria-hidden="true"></span>
+            <span>עדכון חדש זמין!</span>
         </div>
         <div style="font-size: 14px; margin-bottom: 10px;">
             גרסה חדשה עם שיפורים ותכונות נוספות מחכה לך
@@ -1485,38 +1878,44 @@
         <div class="version-info" style="font-size: 13px; margin-bottom: 10px; opacity: 0.9;">
             גרסה עדכנית
         </div>
-        <button onclick="updateApp()" style="background: #27ae60; color: white;">
-            ✅ עדכן עכשיו
+        <button onclick="updateApp()" style="background: #27ae60; color: white; display: inline-flex; gap: 6px; align-items: center; justify-content: center;">
+            <span class="icon-only" data-lucide="download" aria-hidden="true"></span>
+            <span>עדכן עכשיו</span>
         </button>
-        <button onclick="dismissUpdate()" class="dismiss-btn">
-            ⏰ אחר כך
+        <button onclick="dismissUpdate()" class="dismiss-btn" style="display: inline-flex; gap: 6px; align-items: center; justify-content: center;">
+            <span class="icon-only" data-lucide="clock" aria-hidden="true"></span>
+            <span>אחר כך</span>
         </button>
     </div>
 
     <!-- תפריט הגדרות מערכת -->
     <div class="settings-menu">
         <button class="settings-toggle" id="settingsToggleBtn" onclick="toggleSettingsMenu(event)" aria-label="הגדרות מערכת" aria-expanded="false">
-            ☰
+            <span class="icon-only" data-lucide="menu" aria-hidden="true"></span>
         </button>
         <div class="settings-dropdown" id="settingsDropdown" role="menu" aria-hidden="true">
             <button id="dayNightSettingBtn" role="menuitem" onclick="handleDayNightToggle(this)">
-                <span id="dayNightSettingIcon">🌙</span>
+                <span id="dayNightSettingIcon" class="icon-only" data-lucide="moon" aria-hidden="true"></span>
                 <span id="dayNightSettingLabel">הפעל מצב יום</span>
             </button>
             <button role="menuitem" onclick="handleThemeSelector(this)">
-                <span>🎨</span>
+                <span class="icon-only" data-lucide="palette" aria-hidden="true"></span>
                 <span>בחר עיצוב</span>
             </button>
+            <button role="menuitem" onclick="handleLayoutSelector(this)">
+                <span class="icon-only" data-lucide="layout-dashboard" aria-hidden="true"></span>
+                <span>בחר פריסה</span>
+            </button>
             <button role="menuitem" onclick="handleUpdateCheck(this)">
-                <span>🔄</span>
+                <span class="icon-only" data-lucide="refresh-cw" aria-hidden="true"></span>
                 <span>בדוק עדכון עכשיו</span>
             </button>
             <button role="menuitem" onclick="handleHardReload(this)">
-                <span>♻️</span>
+                <span class="icon-only" data-lucide="rotate-ccw" aria-hidden="true"></span>
                 <span>רענון קשיח (ניקוי מטמון)</span>
             </button>
             <button role="menuitem" onclick="handleGoBack(this)">
-                <span>🔙</span>
+                <span class="icon-only" data-lucide="arrow-right" aria-hidden="true"></span>
                 <span>חזרה לתפריט הראשי</span>
             </button>
         </div>
@@ -1524,36 +1923,30 @@
 
     <!-- Theme selector modal -->
     <div class="theme-selector-overlay" id="themeSelectorOverlay" aria-hidden="true" onclick="themeSelectorOverlayClick(event)">
-        <div class="theme-selector-modal" role="dialog" aria-modal="true" aria-labelledby="themeSelectorTitle">
-            <div class="theme-selector-header">
-                <h3 id="themeSelectorTitle">🎨 בחר עיצוב לנגן</h3>
-                <button class="theme-selector-close" aria-label="סגור" onclick="closeThemeSelector()">✖</button>
-            </div>
+            <div class="theme-selector-modal" role="dialog" aria-modal="true" aria-labelledby="themeSelectorTitle">
+                <div class="theme-selector-header">
+                    <h3 id="themeSelectorTitle" style="display:flex;align-items:center;gap:8px;">
+                        <span class="inline-icon" data-lucide="palette" aria-hidden="true"></span>
+                        <span>בחר עיצוב לנגן</span>
+                    </h3>
+                    <button class="theme-selector-close" aria-label="סגור" onclick="closeThemeSelector()">
+                        <span class="icon-only" data-lucide="x" aria-hidden="true"></span>
+                    </button>
+                </div>
             <div class="theme-card-grid">
-                <div class="theme-card" data-theme="modern" onclick="selectTheme('modern')">
+                <div class="theme-card active" data-theme="dark" onclick="selectTheme('dark')">
                     <div class="theme-preview"></div>
-                    <h4>Modern Night</h4>
-                    <p>גרדיאנט כהה, ניאון ירוק</p>
+                    <div class="theme-card-info">
+                        <h4>Dark Graphite</h4>
+                        <p>כהה פרימיום לנהיגת לילה</p>
+                    </div>
                 </div>
-                <div class="theme-card" data-theme="classic" onclick="selectTheme('classic')">
+                <div class="theme-card" data-theme="light" onclick="selectTheme('light')">
                     <div class="theme-preview"></div>
-                    <h4>Classic Blue</h4>
-                    <p>כחולים אלגנטיים</p>
-                </div>
-                <div class="theme-card" data-theme="neon" onclick="selectTheme('neon')">
-                    <div class="theme-preview"></div>
-                    <h4>Neon Sunset</h4>
-                    <p>ורוד-סגול עוצמתי</p>
-                </div>
-                <div class="theme-card" data-theme="glass" onclick="selectTheme('glass')">
-                    <div class="theme-preview"></div>
-                    <h4>Glassmorphism</h4>
-                    <p>זכוכית חלבית בהירה</p>
-                </div>
-                <div class="theme-card" data-theme="forest" onclick="selectTheme('forest')">
-                    <div class="theme-preview"></div>
-                    <h4>Forest Drive</h4>
-                    <p>ירוקים עמוקים ונעימים</p>
+                    <div class="theme-card-info">
+                        <h4>Light Titanium</h4>
+                        <p>בהיר ונקי לנהיגת יום</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1563,7 +1956,10 @@
     <audio id="backgroundAudio" style="display: none;" preload="auto"></audio>
 
     <div class="music-player" id="musicPlayer">
-        <h2 style="font-size: 22px; margin: 5px 0;">🎶 נגן מוזיקה לרכב 🚗</h2>
+        <h2 style="font-size: 18px; margin: 5px 0; display: flex; gap: 8px; align-items: center; justify-content: center; color: rgba(237, 239, 243, 0.68); font-weight: 500;" id="playerTitle">
+            <span class="inline-icon" data-lucide="headphones" aria-hidden="true"></span>
+            <span>נגן מוזיקה לרכב</span>
+        </h2>
         <div class="layout-columns">
             <div class="media-column">
                 <div id="player" class="video-frame" title="נגן YouTube - לחיצות חסומות"></div>
@@ -1571,35 +1967,64 @@
             <div class="interface-column">
                 <div class="control-panel">
                     <div class="control-buttons top-controls">
-                        <button class="control-btn icon-btn" title="שיר הבא" aria-label="שיר הבא" onclick="buttonClickEffect(this); nextTrack()">⏭</button>
-                        <button class="control-btn icon-btn" id="playPauseBtn" title="עצור" aria-label="עצור" onclick="buttonClickEffect(this); togglePlayPause(this)">⏸</button>
-                        <button class="control-btn icon-btn" title="שיר קודם" aria-label="שיר קודם" onclick="buttonClickEffect(this); previousTrack()">⏮</button>
-                        <button class="control-btn icon-btn shuffle-btn" id="songShuffleBtn" title="ערבוב שירים" aria-label="ערבוב שירים" onclick="buttonClickEffect(this); toggleSongShuffle()">🔀</button>
-                        <button class="control-btn icon-btn shuffle-btn" id="playlistShuffleBtn" title="ערבוב פלייליסטים" aria-label="ערבוב פלייליסטים" onclick="buttonClickEffect(this); togglePlaylistShuffle()">🔁</button>
+                        <button class="control-btn icon-btn" title="שיר הבא" aria-label="שיר הבא" onclick="buttonClickEffect(this); nextTrack()">
+                            <span class="sr-only">שיר הבא</span>
+                            <span class="icon-only" data-lucide="skip-forward" aria-hidden="true"></span>
+                        </button>
+                        <button class="control-btn icon-btn" id="playPauseBtn" title="עצור" aria-label="עצור" onclick="buttonClickEffect(this); togglePlayPause(this)">
+                            <span class="sr-only" id="playPauseSrLabel">עצור</span>
+                            <span class="icon-only" data-icon-role="playpause" data-lucide="pause" aria-hidden="true"></span>
+                        </button>
+                        <button class="control-btn icon-btn" title="שיר קודם" aria-label="שיר קודם" onclick="buttonClickEffect(this); previousTrack()">
+                            <span class="sr-only">שיר קודם</span>
+                            <span class="icon-only" data-lucide="skip-back" aria-hidden="true"></span>
+                        </button>
+                        <button class="control-btn icon-btn shuffle-btn" id="songShuffleBtn" title="ערבוב שירים" aria-label="ערבוב שירים" onclick="buttonClickEffect(this); toggleSongShuffle()">
+                            <span class="sr-only">ערבוב שירים</span>
+                            <span class="icon-only" data-lucide="shuffle" aria-hidden="true"></span>
+                        </button>
+                        <button class="control-btn icon-btn shuffle-btn" id="playlistShuffleBtn" title="ערבוב פלייליסטים" aria-label="ערבוב פלייליסטים" onclick="buttonClickEffect(this); togglePlaylistShuffle()">
+                            <span class="sr-only">ערבוב פלייליסטים</span>
+                            <span class="icon-only" data-lucide="repeat" aria-hidden="true"></span>
+                        </button>
                     </div>
 
                     <div class="control-buttons playlist-controls">
                         <button class="control-btn pill-btn" id="nextPlaylistBtn" style="display: none;"
                             title="פלייליסט הבא" aria-label="פלייליסט הבא"
-                            onclick="buttonClickEffect(this); nextPlaylist()">⏩</button>
+                            onclick="buttonClickEffect(this); nextPlaylist()">
+                            <span class="sr-only">פלייליסט הבא</span>
+                            <span class="icon-only" data-lucide="chevrons-right" aria-hidden="true"></span>
+                        </button>
                         <button class="control-btn pill-btn"
                             title="ניהול פלייליסטים" aria-label="ניהול פלייליסטים"
-                            onclick="buttonClickEffect(this); openPlaylistManager()">📜</button>
+                            onclick="buttonClickEffect(this); openPlaylistManager()">
+                            <span class="sr-only">ניהול פלייליסטים</span>
+                            <span class="icon-only" data-lucide="list-music" aria-hidden="true"></span>
+                        </button>
                         <button class="control-btn pill-btn" id="prevPlaylistBtn" style="display: none;"
                             title="פלייליסט קודם" aria-label="פלייליסט קודם"
-                            onclick="buttonClickEffect(this); previousPlaylist()">⏪</button>
+                            onclick="buttonClickEffect(this); previousPlaylist()">
+                            <span class="sr-only">פלייליסט קודם</span>
+                            <span class="icon-only" data-lucide="chevrons-left" aria-hidden="true"></span>
+                        </button>
                     </div>
                 </div>
 
-                <div class="playlist-name" id="playlistName">🎵 פלייליסט ראשי - נהיגה בכיף 🚗</div>
+                <div class="playlist-name" id="playlistName">
+                    <span class="inline-icon" data-lucide="music-4" aria-hidden="true"></span>
+                    <span id="playlistNameText">פלייליסט ראשי - נהיגה בכיף</span>
+                </div>
 
                 <!-- אינדיקטור שליטה קולית -->
-                <div id="voiceIndicator" style="display: none; background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 8px 15px; border-radius: 20px; margin: 10px auto; text-align: center; font-size: 14px; font-weight: bold; animation: pulse 1.5s infinite; cursor: pointer; user-select: none;"
+                <div id="voiceIndicator" style="display: none; background: rgba(47, 107, 255, 0.15); border: 1px solid rgba(47, 107, 255, 0.3); color: #2F6BFF; padding: 8px 14px; border-radius: 10px; margin: 10px auto; text-align: center; font-size: 13px; font-weight: 500; cursor: pointer; user-select: none;"
                     onclick="toggleVoiceControl()">
-                    🎤 מאזין לפקודות קוליות...
+                    <span class="inline-icon" data-lucide="mic" aria-hidden="true"></span>
+                    <span>מאזין לפקודות קוליות...</span>
                 </div>
-                <div id="voiceCommand" style="display: none; background: #27ae60; color: white; padding: 8px 15px; border-radius: 20px; margin: 10px auto; text-align: center; font-size: 14px; font-weight: bold;">
-                    ✅ פקודה זוהתה
+                <div id="voiceCommand" style="display: none; background: rgba(47, 107, 255, 0.15); border: 1px solid rgba(47, 107, 255, 0.3); color: #2F6BFF; padding: 8px 14px; border-radius: 10px; margin: 10px auto; text-align: center; font-size: 13px; font-weight: 500; display: flex; gap: 6px; align-items: center; justify-content: center;">
+                    <span class="inline-icon" data-lucide="check-circle" aria-hidden="true"></span>
+                    <span>פקודה זוהתה</span>
                 </div>
                 
                 <!-- תצוגת שיר נוכחי -->
@@ -1610,7 +2035,9 @@
                 
                 <!-- בקר עוצמת שמע -->
                 <div class="volume-control" id="volumeControl">
-                    <span class="volume-icon" onclick="toggleMute()" id="volumeIcon">🔊</span>
+                    <button class="volume-icon" onclick="toggleMute()" id="volumeToggleBtn" aria-label="השתק / הפעלה" type="button">
+                        <span class="icon-only" id="volumeIcon" data-lucide="volume-2" aria-hidden="true"></span>
+                    </button>
                     <input type="range" min="0" max="100" value="100" class="volume-slider" id="volumeSlider">
                 </div>
             </div>
@@ -1622,21 +2049,35 @@
     <!-- מודאל פתרון בעיות הרשאת מיקרופון -->
     <div id="microphoneHelpModal" class="microphone-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="microphoneHelpTitle">
         <div class="microphone-modal">
-            <button class="microphone-modal-close" aria-label="סגור" onclick="closeMicrophoneHelp()">✖</button>
-            <h2 id="microphoneHelpTitle">🎤 נדרשת הרשאת מיקרופון</h2>
+            <button class="microphone-modal-close" aria-label="סגור" onclick="closeMicrophoneHelp()">
+                <span class="icon-only" data-lucide="x" aria-hidden="true"></span>
+            </button>
+            <h2 id="microphoneHelpTitle" style="display:flex;align-items:center;gap:8px;">
+                <span class="inline-icon" data-lucide="mic" aria-hidden="true"></span>
+                <span>נדרשת הרשאת מיקרופון</span>
+            </h2>
             <p>
                 כדי להשתמש בשליטה הקולית, עליך לאפשר גישה למיקרופון. בחר באחת האפשרויות:
             </p>
             <div class="microphone-modal-actions">
-                <button class="microphone-modal-primary" onclick="retryMicrophonePermission()">🔁 נסה שוב עכשיו</button>
-                <button class="microphone-modal-secondary" onclick="openMicrophoneSettingsGuide()">📘 הוראות פתיחה בהגדרות</button>
+                <button class="microphone-modal-primary" onclick="retryMicrophonePermission()">
+                    <span class="icon-only" data-lucide="refresh-cw" aria-hidden="true"></span>
+                    <span>נסה שוב עכשיו</span>
+                </button>
+                <button class="microphone-modal-secondary" onclick="openMicrophoneSettingsGuide()">
+                    <span class="icon-only" data-lucide="book-open" aria-hidden="true"></span>
+                    <span>הוראות פתיחה בהגדרות</span>
+                </button>
             </div>
             <div class="microphone-retry-status" id="microphoneRetryStatus"></div>
             <div class="microphone-settings-guide" id="microphoneSettingsGuide" style="display: none;">
-                <h3>📱 איך לפתוח הרשאה ידנית?</h3>
+                <h3 style="display:flex;gap:6px;align-items:center;">
+                    <span class="inline-icon" data-lucide="smartphone" aria-hidden="true"></span>
+                    <span>איך לפתוח הרשאה ידנית?</span>
+                </h3>
                 <ul>
-                    <li><strong>Chrome / Android:</strong> הקש על סמל המנעול ▶️ Permissions ▶️ Microphone ▶️ Allow.</li>
-                    <li><strong>Safari / iPhone:</strong> הגדרות ▶️ Safari ▶️ מצלמה ומיקרופון ▶️ אפשר.</li>
+                    <li><strong>Chrome / Android:</strong> הקש על סמל המנעול → Permissions → Microphone → Allow.</li>
+                    <li><strong>Safari / iPhone:</strong> הגדרות → Safari → מצלמה ומיקרופון → אפשר.</li>
                     <li>לאחר העדכון רענן את האפליקציה וחזור לכאן.</li>
                 </ul>
             </div>
@@ -1646,18 +2087,26 @@
     <!-- מודאל ניהול פלייליסטים -->
     <div id="playlistModal" class="playlist-modal-overlay">
         <div class="playlist-modal-container">
-            <h2 class="playlist-modal-title">⚙️ ניהול פלייליסטים</h2>
+            <h2 class="playlist-modal-title" style="display:flex;align-items:center;gap:8px;">
+                <span class="inline-icon" data-lucide="settings" aria-hidden="true"></span>
+                <span>ניהול פלייליסטים</span>
+            </h2>
             
             <!-- טופס הוספת פלייליסט או סרטון -->
             <div class="playlist-modal-section">
-                <h3 class="playlist-section-title">➕ הוסף פלייליסט או סרטון</h3>
+                <h3 class="playlist-section-title" style="display:flex;align-items:center;gap:6px;">
+                    <span class="inline-icon" data-lucide="plus-square" aria-hidden="true"></span>
+                    <span>הוסף פלייליסט או סרטון</span>
+                </h3>
                 <input type="text" id="newPlaylistName" placeholder="שם (לדוגמה: מוזיקה לנסיעה)" class="playlist-input">
                 <input type="text" id="newPlaylistId" placeholder="לינק YouTube - סרטון או פלייליסט" class="playlist-input">
-                <button onclick="addNewPlaylist()" class="playlist-btn playlist-btn-primary">
-                    ➕ הוסף
+                <button onclick="addNewPlaylist()" class="playlist-btn playlist-btn-primary" style="display:flex;gap:6px;justify-content:center;align-items:center;">
+                    <span class="icon-only" data-lucide="plus" aria-hidden="true"></span>
+                    <span>הוסף</span>
                 </button>
                 <div class="playlist-hint">
-                    💡 <b>תמיכה מלאה!</b> הדבק לינק מלא מ-YouTube:<br>
+                    <span class="inline-icon" data-lucide="info" aria-hidden="true"></span>
+                    <b>תמיכה מלאה!</b> הדבק לינק מלא מ-YouTube:<br>
                     • סרטון: youtube.com/watch?v=...<br>
                     • פלייליסט: youtube.com/playlist?list=...
                 </div>
@@ -1665,28 +2114,35 @@
             
             <!-- חיפוש פלייליסטים ביוטיוב -->
             <div class="playlist-modal-section">
-                <h3 class="playlist-section-title">🔍 חיפוש פלייליסטים ביוטיוב</h3>
+                <h3 class="playlist-section-title" style="display:flex;align-items:center;gap:6px;">
+                    <span class="inline-icon" data-lucide="search" aria-hidden="true"></span>
+                    <span>חיפוש פלייליסטים ביוטיוב</span>
+                </h3>
                 <div class="playlist-search-row">
                     <input type="text" id="youtubeSearchQuery" placeholder="חפש פלייליסטים..." class="playlist-input playlist-search-input"
                         onkeypress="if(event.key==='Enter') searchYouTubePlaylists()">
-                    <button onclick="searchYouTubePlaylists()" class="playlist-btn playlist-btn-search">
-                        🔍
+                    <button onclick="searchYouTubePlaylists()" class="playlist-btn playlist-btn-search" style="display:flex;align-items:center;justify-content:center;">
+                        <span class="icon-only" data-lucide="search" aria-hidden="true"></span>
                     </button>
                 </div>
                 <div id="youtubeSearchResults" class="playlist-search-results"></div>
                 <div id="searchLoading" style="display: none; text-align: center; padding: 20px; color: #aaa;">
-                    ⏳ מחפש...
+                    <span class="inline-icon" data-lucide="loader" aria-hidden="true"></span> מחפש...
                 </div>
             </div>
             
             <!-- רשימת פלייליסטים קיימים -->
             <div class="playlist-modal-section">
-                <h3 class="playlist-section-title">📋 פלייליסטים קיימים</h3>
+                <h3 class="playlist-section-title" style="display:flex;align-items:center;gap:6px;">
+                    <span class="inline-icon" data-lucide="list" aria-hidden="true"></span>
+                    <span>פלייליסטים קיימים</span>
+                </h3>
                 <div id="playlistList" class="playlist-list"></div>
             </div>
             
-            <button onclick="closePlaylistManager()" class="playlist-btn playlist-btn-close">
-                ✖️ סגור
+            <button onclick="closePlaylistManager()" class="playlist-btn playlist-btn-close" style="display:flex;gap:6px;align-items:center;justify-content:center;">
+                <span class="icon-only" data-lucide="x" aria-hidden="true"></span>
+                <span>סגור</span>
             </button>
         </div>
     </div>
@@ -1695,7 +2151,7 @@
     <script>
         // גרסת האפליקציה
         const APP_VERSION = "2.3.0";
-        console.log(`🎵 נגן מוזיקה לרכב - גרסה ${APP_VERSION}`);
+        console.log(`[Music Player] נגן מוזיקה לרכב - גרסה ${APP_VERSION}`);
 
         // משתני מערכת עדכונים
         let newServiceWorker = null;
@@ -1720,6 +2176,39 @@
         let isDayMode = false; // מצב ברירת מחדל: מצב לילה
         let lastVolume = 100; // נוסיף משתנה לשמירת עוצמת הקול האחרונה
         let deferredPrompt; // לשמירת האירוע של התקנת PWA
+
+        function renderIcons(scope) {
+            if (!window.lucide) {
+                console.warn('[Icons] Lucide library not loaded');
+                return;
+            }
+            try {
+                // Use lucide.createIcons() - the correct API for CDN version
+                lucide.createIcons();
+            } catch (e) {
+                console.error('[Icons] Error rendering icons:', e);
+            }
+        }
+
+        function updateIconElement(element, iconName, options = {}) {
+            if (!element || !iconName) return;
+            element.setAttribute('data-lucide', iconName);
+            // Re-render all icons
+            renderIcons();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait a bit for Lucide to fully load
+            setTimeout(() => {
+                renderIcons();
+            }, 100);
+        });
+
+        // Also render icons when Lucide loads
+        window.addEventListener('load', () => {
+            renderIcons();
+        });
+
         let hasUserInteracted = false; // מניעת autoplay – ננגן רק לאחר לחיצה
         let adDetectionInterval = null; // מזהה זיהוי פרסומות
         let isAdPlaying = false; // האם מתנגנת פרסומת כרגע
@@ -1730,14 +2219,14 @@
 
         // טעינת פלייליסטים מ-LocalStorage או ברירת מחדל
         const defaultPlaylists = [
-            { name: "🎵 פלייליסט ראשי - נהיגה בכיף 🚗", id: "PLTpkiFPWhsF9JMQmEy4uptvTqanhTQ1Zo" },
-            { name: "🎸 רוק ישראלי 🇮🇱", id: "PLn-Gsrq4vA2s8v3yOixMDxL-cXrmSuxDC" },
-            { name: "🎤 מזרחית מושלמת 💃", id: "PLUFHSF7zKGMutOiQfwU3K2LytQBY8a_hw" },
-            { name: "🎶 מוזיקה לנסיעה", id: "PLyoGzIYCpxLgeHw4tFrb5v8AIxhJu-Fae" },
-            { name: "🎧 להיטים חמים 🔥", id: "PL7qAso9Bl0b91xYUe2zEjpSGeWGgrxh6l" },
-            { name: "🎹 פופ ישראלי", id: "PLE9-6gZLvQ0Q2TyoNprRzF1aTzdW8UkM2" },
-            { name: "🎺 קלאסיקות נצחיות", id: "PLjCGoHm3d-dkokIl_hZeS6PGj2EpRuWKf" },
-            { name: "🎻 אווירה רגועה 🌙", id: "PLwrAS8k0keWQMSTv3nyzhSNEH34NED50E" }
+            { name: "פלייליסט ראשי - נהיגה בכיף", id: "PLTpkiFPWhsF9JMQmEy4uptvTqanhTQ1Zo" },
+            { name: "רוק ישראלי", id: "PLn-Gsrq4vA2s8v3yOixMDxL-cXrmSuxDC" },
+            { name: "מזרחית מושלמת", id: "PLUFHSF7zKGMutOiQfwU3K2LytQBY8a_hw" },
+            { name: "מוזיקה לנסיעה", id: "PLyoGzIYCpxLgeHw4tFrb5v8AIxhJu-Fae" },
+            { name: "להיטים חמים", id: "PL7qAso9Bl0b91xYUe2zEjpSGeWGgrxh6l" },
+            { name: "פופ ישראלי", id: "PLE9-6gZLvQ0Q2TyoNprRzF1aTzdW8UkM2" },
+            { name: "קלאסיקות נצחיות", id: "PLjCGoHm3d-dkokIl_hZeS6PGj2EpRuWKf" },
+            { name: "אווירה רגועה", id: "PLwrAS8k0keWQMSTv3nyzhSNEH34NED50E" }
         ];
         
         // הערה: יש להחליף את ה-Playlist IDs למעלה ב-IDs אמיתיים מ-YouTube
@@ -1747,12 +2236,12 @@
         
         // אם יש רק פלייליסט אחד, החזר לברירת מחדל
         if (playlists.length === 1) {
-            console.log('⚠️ נמצא רק פלייליסט אחד - מחזיר לברירת מחדל');
+            console.log('[!] נמצא רק פלייליסט אחד - מחזיר לברירת מחדל');
             playlists = defaultPlaylists;
             localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
         }
         
-        console.log(`🎵 נטענו ${playlists.length} פלייליסטים:`, playlists.map(p => p.name));
+        console.log(`[Playlists] נטענו ${playlists.length} פלייליסטים:`, playlists.map(p => p.name));
 
         // שמירת פלייליסטים ב-LocalStorage
         function savePlaylists() {
@@ -1765,17 +2254,17 @@
             const prevBtn = document.getElementById('prevPlaylistBtn');
             const nextBtn = document.getElementById('nextPlaylistBtn');
             
-            console.log(`📋 מספר פלייליסטים: ${playlists.length}`);
-            console.log('📋 רשימת פלייליסטים:', playlists.map(p => p.name).join(', '));
+            console.log(`[Info] מספר פלייליסטים: ${playlists.length}`);
+            console.log('[Info] רשימת פלייליסטים:', playlists.map(p => p.name).join(', '));
             
             if (playlists.length > 1) {
                 if (prevBtn) prevBtn.style.display = 'inline-block';
                 if (nextBtn) nextBtn.style.display = 'inline-block';
-                console.log('✅ כפתורי ניווט מוצגים');
+                console.log('[V] כפתורי ניווט מוצגים');
             } else {
                 if (prevBtn) prevBtn.style.display = 'none';
                 if (nextBtn) nextBtn.style.display = 'none';
-                console.log('⚠️ כפתורי ניווט מוסתרים - יש רק פלייליסט אחד');
+                console.log('[!] כפתורי ניווט מוסתרים - יש רק פלייליסט אחד');
             }
         }
 
@@ -1805,7 +2294,7 @@
                     return data && data.video_id ? data.video_id : null;
                 }
             } catch (err) {
-                console.warn('⚠️ לא ניתן לקבל מזהה וידאו נוכחי:', err);
+                console.warn('[!] לא ניתן לקבל מזהה וידאו נוכחי:', err);
             }
             return null;
         }
@@ -1814,14 +2303,19 @@
             const btn = document.getElementById('playPauseBtn');
             if (!btn) return;
 
+            const icon = btn.querySelector('[data-icon-role="playpause"]');
+            const srLabel = document.getElementById('playPauseSrLabel');
+
             if (isPlaying) {
-                btn.textContent = '⏸';
+                updateIconElement(icon, 'pause');
                 btn.title = 'עצור';
                 btn.setAttribute('aria-label', 'עצור');
+                if (srLabel) srLabel.textContent = 'עצור';
             } else {
-                btn.textContent = '▶';
+                updateIconElement(icon, 'play');
                 btn.title = 'נגן';
                 btn.setAttribute('aria-label', 'נגן');
+                if (srLabel) srLabel.textContent = 'נגן';
             }
         }
 
@@ -1904,7 +2398,7 @@
             const indices = playlist.map((_, index) => index);
             const available = currentIndex >= 0 ? indices.filter(index => index !== currentIndex) : indices;
             songShuffleQueue = shuffleArray(available);
-            console.log('🔀 נבנתה רשימת ערבוב לשירים:', songShuffleQueue);
+            console.log('[Shuffle] נבנתה רשימת ערבוב לשירים:', songShuffleQueue);
         }
 
         function ensureSongShuffleQueue() {
@@ -1939,10 +2433,10 @@
 
             try {
                 player.playVideoAt(nextIndex);
-                console.log(`🎲 מעבר אקראי לשיר במיקום ${nextIndex}`);
+                console.log(`[Shuffle] מעבר אקראי לשיר במיקום ${nextIndex}`);
                 return true;
             } catch (err) {
-                console.warn('⚠️ לא ניתן לנגן שיר אקראי:', err);
+                console.warn('[!] לא ניתן לנגן שיר אקראי:', err);
                 return false;
             }
         }
@@ -1968,10 +2462,10 @@
 
             try {
                 player.playVideoAt(previousIndex);
-                console.log(`⏮️ חזרה לשיר ממערך ההיסטוריה (מיקום ${previousIndex})`);
+                console.log(`[Prev] חזרה לשיר ממערך ההיסטוריה (מיקום ${previousIndex})`);
                 return true;
             } catch (err) {
-                console.warn('⚠️ לא ניתן לחזור לשיר קודם בערבוב:', err);
+                console.warn('[!] לא ניתן לחזור לשיר קודם בערבוב:', err);
                 return false;
             }
         }
@@ -1994,15 +2488,15 @@
                 try {
                     player.setShuffle(songShuffleEnabled);
                 } catch (err) {
-                    console.warn('⚠️ לא ניתן לעדכן מצב shuffle של הנגן:', err);
+                    console.warn('[!] לא ניתן לעדכן מצב shuffle של הנגן:', err);
                 }
             }
 
             if (songShuffleEnabled) {
-                console.log('🔀 מצב ערבוב שירים הופעל');
+                console.log('[Shuffle] מצב ערבוב שירים הופעל');
                 buildSongShuffleQueue();
             } else {
-                console.log('⏹️ מצב ערבוב שירים הושבת');
+                console.log('[Shuffle] מצב ערבוב שירים הושבת');
             }
 
             updateShuffleButtons();
@@ -2017,7 +2511,7 @@
             const indices = playlists.map((_, index) => index);
             const available = indices.filter(index => index !== currentPlaylistIndex);
             playlistShuffleQueue = shuffleArray(available);
-            console.log('🔁 נבנתה רשימת ערבוב לפלייליסטים:', playlistShuffleQueue);
+            console.log('[Shuffle] נבנתה רשימת ערבוב לפלייליסטים:', playlistShuffleQueue);
         }
 
         function getNextPlaylistIndex() {
@@ -2074,10 +2568,10 @@
             playlistShuffleHistory = [];
 
             if (playlistShuffleEnabled) {
-                console.log('🔁 מצב ערבוב פלייליסטים הופעל');
+                console.log('[Shuffle] מצב ערבוב פלייליסטים הופעל');
                 buildPlaylistShuffleQueue();
             } else {
-                console.log('⏹️ מצב ערבוב פלייליסטים הושבת');
+                console.log('[Shuffle] מצב ערבוב פלייליסטים הושבת');
             }
 
             updateShuffleButtons();
@@ -2113,20 +2607,25 @@
                 return `
                 <div class="playlist-item">
                     <div class="playlist-item-info">
-                        <div class="playlist-item-name">${typeIcon} ${playlist.name}</div>
+                        <div class="playlist-item-name">
+                            <span class="inline-icon" data-lucide="${playlist.type === 'video' ? 'video' : 'music-3'}" aria-hidden="true"></span>
+                            <span>${playlist.name}</span>
+                        </div>
                         <div class="playlist-item-meta">${typeLabel}</div>
                     </div>
                     <div class="playlist-item-actions">
-                        <button onclick="editPlaylistName(${index})" class="playlist-item-btn playlist-item-btn-edit">
-                            ✏️
+                        <button onclick="editPlaylistName(${index})" class="playlist-item-btn playlist-item-btn-edit" aria-label="שינוי שם פלייליסט">
+                            <span class="icon-only" data-lucide="edit-3" aria-hidden="true"></span>
                         </button>
-                        <button onclick="deletePlaylist(${index})" class="playlist-item-btn playlist-item-btn-delete">
-                            🗑️
+                        <button onclick="deletePlaylist(${index})" class="playlist-item-btn playlist-item-btn-delete" aria-label="מחיקת פלייליסט">
+                            <span class="icon-only" data-lucide="trash-2" aria-hidden="true"></span>
                         </button>
                     </div>
                 </div>
             `;
             }).join('');
+
+            renderIcons(listContainer);
         }
 
         // חילוץ Video ID מלינק YouTube
@@ -2164,7 +2663,7 @@
             const input = idInput.value.trim();
             
             if (!name || !input) {
-                alert('❌ אנא מלא את השם והלינק');
+                alert('[שגיאה] אנא מלא את השם והלינק');
                 return;
             }
             
@@ -2179,19 +2678,19 @@
             if (playlistId) {
                 id = playlistId;
                 type = 'playlist';
-                console.log('🎵 זוהה פלייליסט:', id);
+                console.log('[Playlist] זוהה פלייליסט:', id);
             } else if (videoId) {
                 id = videoId;
                 type = 'video';
-                console.log('🎬 זוהה סרטון:', id);
+                console.log('[Video] זוהה סרטון:', id);
             } else {
-                alert('❌ לא הצלחתי לזהות את הלינק. ודא שהדבקת לינק תקין מ-YouTube.');
+                alert('[שגיאה] לא הצלחתי לזהות את הלינק. ודא שהדבקת לינק תקין מ-YouTube.');
                 return;
             }
             
             // בדיקה אם ה-ID כבר קיים
             if (playlists.some(p => p.id === id)) {
-                alert('❌ פריט עם ID זה כבר קיים');
+                alert('[שגיאה] פריט עם ID זה כבר קיים');
                 return;
             }
             
@@ -2204,13 +2703,13 @@
             idInput.value = '';
             
             const typeHeb = type === 'video' ? 'סרטון' : 'פלייליסט';
-            alert(`✅ ה${typeHeb} נוסף בהצלחה!`);
+            alert(`[הצלחה] ה${typeHeb} נוסף בהצלחה!`);
         }
 
         // מחיקת פלייליסט
         function deletePlaylist(index) {
             if (playlists.length === 1) {
-                alert('❌ לא ניתן למחוק את הפלייליסט האחרון');
+                alert('[שגיאה] לא ניתן למחוק את הפלייליסט האחרון');
                 return;
             }
             
@@ -2221,16 +2720,13 @@
                 // אם מחקנו את הפלייליסט הנוכחי, עבור לראשון
                 if (currentPlaylistIndex >= playlists.length) {
                     currentPlaylistIndex = 0;
-                    reloadPlayer();
-                } else if (currentPlaylistIndex === index) {
-                    reloadPlayer();
                 }
                 
                 savePlaylists();
                 renderPlaylistList();
                 updatePlaylistName();
                 
-                alert('✅ הפלייליסט נמחק בהצלחה!');
+                alert('[הצלחה] הפלייליסט נמחק בהצלחה!');
             }
         }
 
@@ -2249,7 +2745,7 @@
                     updatePlaylistName();
                 }
                 
-                alert('✅ שם הפלייליסט עודכן בהצלחה!');
+                alert('[הצלחה] שם הפלייליסט עודכן בהצלחה!');
             }
         }
 
@@ -2260,7 +2756,7 @@
         async function searchYouTubePlaylists() {
             const query = document.getElementById('youtubeSearchQuery').value.trim();
             if (!query) {
-                alert('⚠️ הכנס מילות חיפוש');
+                alert('[שים לב] הכנס מילות חיפוש');
                 return;
             }
             
@@ -2325,12 +2821,12 @@
         // הוספת פלייליסט מתוצאות החיפוש
         function addFromSearch(playlistId, title) {
             if (playlists.some(p => p.id === playlistId)) {
-                alert('❌ פלייליסט זה כבר קיים');
+                alert('[שגיאה] פלייליסט זה כבר קיים');
                 return;
             }
             
             playlists.push({ 
-                name: `🎵 ${title}`, 
+                name: title, 
                 id: playlistId, 
                 type: 'playlist' 
             });
@@ -2340,7 +2836,7 @@
             // עדכון כפתור בתוצאות החיפוש
             searchYouTubePlaylists();
             
-            alert(`✅ הפלייליסט "${title}" נוסף בהצלחה!`);
+            alert(`[הצלחה] הפלייליסט "${title}" נוסף בהצלחה!`);
         }
 
         function onYouTubeIframeAPIReady() {
@@ -2385,12 +2881,12 @@
                 
                 if (isVideo) {
                     // סרטון בודד
-                    console.log('🎬 טוען סרטון בודד:', currentItem.id);
+                    console.log('[Video] טוען סרטון בודד:', currentItem.id);
                 } else {
                     // פלייליסט
                     playerVars.listType = 'playlist';
                     playerVars.list = currentItem.id;
-                    console.log('🎵 טוען פלייליסט:', currentItem.id);
+                    console.log('[Playlist] טוען פלייליסט:', currentItem.id);
                 }
                 
                 const playerConfig = {
@@ -2413,14 +2909,14 @@
                                 player.setShuffle(true);
                                 buildSongShuffleQueue();
                             } catch (err) {
-                                console.warn('⚠️ לא ניתן להפעיל מצב ערבוב בעת טעינת הנגן:', err);
+                                console.warn('[!] לא ניתן להפעיל מצב ערבוב בעת טעינת הנגן:', err);
                             }
                         }
                         updatePlayPauseButton(false);
                         updateShuffleButtons();
 
                         if (pendingRestoreState && !restoringPlayback) {
-                            console.log('🔁 מנסה לשחזר את השיר האחרון...');
+                            console.log('[Restore] מנסה לשחזר את השיר האחרון...');
                             setTimeout(() => attemptRestorePlayback(), 500);
                         }
                     },
@@ -2434,11 +2930,11 @@
                             if (restoringPlayback && pendingRestoreState) {
                                 const targetTime = pendingRestoreState.time || 0;
                                 if (typeof player.seekTo === 'function') {
-                                    console.log(`⏱️ משחזר מיקום ${targetTime} שניות`);
+                                    console.log(`[Restore] משחזר מיקום ${targetTime} שניות`);
                                     try {
                                         player.seekTo(targetTime, true);
                                     } catch (err) {
-                                        console.warn('⚠️ לא ניתן לשחזר מיקום בזמן:', err);
+                                        console.warn('[!] לא ניתן לשחזר מיקום בזמן:', err);
                                     }
                                 }
                                 pendingRestoreState = null;
@@ -2448,7 +2944,7 @@
                             updatePlayPauseButton(false);
 
                             if (!userRequestedStop) {
-                                console.log('▶️ הנגן הושהה ללא בקשת המשתמש - ממשיך לנגן');
+                                console.log('[Player] הנגן הושהה ללא בקשת המשתמש - ממשיך לנגן');
                                 setTimeout(() => {
                                     if (player && player.getPlayerState && player.getPlayerState() === YT.PlayerState.PAUSED && !userRequestedStop) {
                                         playVideo();
@@ -2459,7 +2955,7 @@
                             updatePlayPauseButton(false);
 
                             if (!userRequestedStop) {
-                                console.log('⏭️ שיר הסתיים - עובר לשיר הבא אוטומטית');
+                                console.log('[Player] שיר הסתיים - עובר לשיר הבא אוטומטית');
                                 setTimeout(() => {
                                     if (!userRequestedStop) {
                                         nextTrack();
@@ -2497,7 +2993,10 @@
         }
 
         function updatePlaylistName() {
-            document.getElementById('playlistName').textContent = playlists[currentPlaylistIndex].name;
+            const nameContainer = document.getElementById('playlistNameText');
+            if (nameContainer) {
+                nameContainer.textContent = playlists[currentPlaylistIndex].name;
+            }
         }
 
         function playVideo(userInitiated = false) {
@@ -2874,6 +3373,14 @@
             openThemeSelector();
         }
 
+        function handleLayoutSelector(button) {
+            if (button) {
+                buttonClickEffect(button);
+            }
+            closeSettingsMenu();
+            alert('בחירת פריסה תתווסף בקרוב (שלב C)');
+        }
+
         function openThemeSelector() {
             const overlay = document.getElementById('themeSelectorOverlay');
             if (overlay) {
@@ -2941,7 +3448,7 @@
             closeSettingsMenu();
             
             // הצג הודעה למשתמש
-            document.getElementById('currentSong').textContent = '🔄 בודק עדכונים...';
+            document.getElementById('currentSong').textContent = 'בודק עדכונים...';
             
             try {
                 // נסה לבדוק עדכונים דרך Service Worker
@@ -2952,7 +3459,7 @@
                         
                         // בדוק אם יש Service Worker ממתין
                         if (registration.waiting) {
-                            document.getElementById('currentSong').textContent = '✅ נמצא עדכון! מרענן...';
+                            document.getElementById('currentSong').textContent = 'נמצא עדכון! מרענן...';
                             registration.waiting.postMessage({ type: 'SKIP_WAITING' });
                             setTimeout(() => window.location.reload(), 500);
                             return;
@@ -2961,7 +3468,7 @@
                 }
                 
                 // אם לא נמצא עדכון דרך SW, נסה רענון קשיח
-                document.getElementById('currentSong').textContent = '🔄 מרענן את האפליקציה...';
+                document.getElementById('currentSong').textContent = 'מרענן את האפליקציה...';
                 
                 // מחק cache ורענן
                 if ('caches' in window) {
@@ -2974,7 +3481,7 @@
                 
             } catch (error) {
                 console.error('שגיאה בבדיקת עדכונים:', error);
-                document.getElementById('currentSong').textContent = '⚠️ שגיאה בבדיקת עדכונים';
+                document.getElementById('currentSong').textContent = 'שגיאה בבדיקת עדכונים';
             }
         }
 
@@ -2993,7 +3500,7 @@
                         try {
                             await registration.unregister();
                         } catch (swError) {
-                            console.warn('‎⚠️‎ Service Worker unregister failed:', swError);
+                            console.warn('[!] Service Worker unregister failed:', swError);
                         }
                     }
                 }
@@ -3004,7 +3511,7 @@
                     await Promise.all(cacheNames.map(name => caches.delete(name)));
                 }
             } catch (error) {
-                console.warn('‎⚠️‎ hardReloadApp cleanup issue:', error);
+                console.warn('[!] hardReloadApp cleanup issue:', error);
             } finally {
                 // רענון קשיח
                 window.location.reload(true);
@@ -3025,12 +3532,13 @@
             }
 
             if (isDayMode) {
-                icon.textContent = '☀️';
+                icon.setAttribute('data-lucide', 'sun');
                 label.textContent = 'הפעל מצב לילה';
             } else {
-                icon.textContent = '🌙';
+                icon.setAttribute('data-lucide', 'moon');
                 label.textContent = 'הפעל מצב יום';
             }
+            renderIcons(icon);
         }
         // פונקציה להחלפת מצב יום/לילה
         function toggleDayNightMode() {
@@ -3308,15 +3816,15 @@
                     
                     // כפתורים נוספים למעבר בין פלייליסטים
                     navigator.mediaSession.setActionHandler('seekbackward', () => {
-                        console.log('⏪ פלייליסט קודם (מ-Media Session)');
+                        console.log('[Media] פלייליסט קודם (מ-Media Session)');
                         previousPlaylist();
                     });
                     navigator.mediaSession.setActionHandler('seekforward', () => {
-                        console.log('⏩ פלייליסט הבא (מ-Media Session)');
+                        console.log('[Media] פלייליסט הבא (מ-Media Session)');
                         nextPlaylist();
                     });
 
-                    console.log('✅ Media Session API מופעל - 5 כפתורים זמינים (שירים + פלייליסטים)');
+                    console.log('[V] Media Session API מופעל - 5 כפתורים זמינים (שירים + פלייליסטים)');
                 } catch (e) {
                     console.warn('Media Session API לא נתמך:', e);
                 }
@@ -3329,7 +3837,7 @@
                 try {
                     const videoData = player.getVideoData();
                     if (videoData && videoData.title) {
-                        const adIndicator = isAdPlaying ? ' 🚫 [מדלג על פרסומת...]' : '';
+                        const adIndicator = isAdPlaying ? ' [מדלג על פרסומת...]' : '';
                         const title = videoData.title;
                         document.getElementById('currentSong').textContent = title + adIndicator;
                         
@@ -3344,7 +3852,7 @@
                     console.error('שגיאה בקבלת מידע על השיר:', e);
                 }
             } else if (!hasUserInteracted) {
-                document.getElementById('currentSong').textContent = 'מוכן לנגן – לחץ על ▶️ כדי להתחיל';
+                document.getElementById('currentSong').textContent = 'מוכן לנגן – לחץ על Play כדי להתחיל';
             }
         }
 
@@ -3407,13 +3915,20 @@
         // עדכון אייקון העוצמה לפי ערך העוצמה
         function updateVolumeIcon(volume) {
             const volumeIcon = document.getElementById('volumeIcon');
+            const toggleBtn = document.getElementById('volumeToggleBtn');
+            if (!volumeIcon || !toggleBtn) return;
+
+            let iconName = 'volume-2';
+            let label = 'עוצמה גבוהה';
             if (volume == 0) {
-                volumeIcon.textContent = '🔇'; // מושתק
+                iconName = 'volume-x';
+                label = 'מושתק';
             } else if (volume < 50) {
-                volumeIcon.textContent = '🔉'; // עוצמה נמוכה
-            } else {
-                volumeIcon.textContent = '🔊'; // עוצמה גבוהה
+                iconName = 'volume-1';
+                label = 'עוצמה בינונית';
             }
+            updateIconElement(volumeIcon, iconName);
+            toggleBtn.setAttribute('aria-label', `השתק / הפעלה (${label})`);
         }
         
         // פונקציה להשתקה והפעלה מחדש של השמע
@@ -3519,7 +4034,7 @@
                     if (videoId && isBackgroundMode) {
                         // השתמש ב-YouTube Audio URL (עובד ברקע!)
                         const audioUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                        console.log('🎵 מעביר לניגון ברקע:', videoData.title);
+                        console.log('[Music] מעביר לניגון ברקע:', videoData.title);
                         
                         // נגן שמע שקט כדי לשמור על הקשר פעיל
                         if (backgroundAudio.paused) {
@@ -3539,20 +4054,20 @@
             let backgroundNotificationShown = false;
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) {
-                    console.log('📱 האפליקציה עברה לרקע - שומר על פעילות');
+                    console.log('[App] האפליקציה עברה לרקע - שומר על פעילות');
                     isBackgroundMode = true;
                     
                     // המשך ניגון גם ברקע
                     if (player && player.getPlayerState && player.getPlayerState() === 1) {
-                        console.log('🎵 ממשיך לנגן ברקע');
+                        console.log('[Music] ממשיך לנגן ברקע');
                         
                         // הפעל Audio ברקע
                         syncBackgroundAudio();
                         
                         // הצג הודעה למשתמש פעם אחת
                         if (!backgroundNotificationShown && 'Notification' in window && Notification.permission === 'granted') {
-                            new Notification('🎵 נגן מוזיקה לרכב', {
-                                body: 'המוזיקה ממשיכה לנגן ברקע 🚗',
+                            new Notification('נגן מוזיקה לרכב', {
+                                body: 'המוזיקה ממשיכה לנגן ברקע',
                                 icon: 'car-music-icon.png',
                                 tag: 'background-music',
                                 requireInteraction: false
@@ -3561,7 +4076,7 @@
                         }
                     }
                 } else {
-                    console.log('📱 האפליקציה חזרה לחזית');
+                    console.log('[App] האפליקציה חזרה לחזית');
                     isBackgroundMode = false;
                     
                     // עצור את ה-background audio
@@ -3966,7 +4481,7 @@
 
         function handleVoiceCommand(command) {
             const normalizedCommand = command.toLowerCase();
-            console.log('🎤 פקודה קולית:', normalizedCommand);
+            console.log('[Voice] פקודה קולית:', normalizedCommand);
             
             if (normalizedCommand.includes('play') || normalizedCommand.includes('נגן') || normalizedCommand.includes('תנגן')) {
                 playVideo();
@@ -4053,9 +4568,9 @@
                 recognition.start();
             } catch (err) {
                 if (err.name === 'InvalidStateError') {
-                    console.log('🎤 השליטה הקולית כבר פעילה');
+                    console.log('[Voice] השליטה הקולית כבר פעילה');
                 } else {
-                    console.error('❌ לא ניתן להפעיל שליטה קולית:', err);
+                    console.error('[Error] לא ניתן להפעיל שליטה קולית:', err);
                 }
             }
         }
@@ -4065,23 +4580,23 @@
             try {
                 recognition.stop();
             } catch (err) {
-                console.error('❌ לא ניתן לעצור שליטה קולית:', err);
+                console.error('[Error] לא ניתן לעצור שליטה קולית:', err);
             }
         }
 
         function toggleVoiceControl() {
             if (!voiceRecognitionInitialized) {
-                console.log('🎤 השליטה הקולית עדיין לא מוכנה');
+                console.log('[Voice] השליטה הקולית עדיין לא מוכנה');
                 return;
             }
 
             voiceControlEnabled = !voiceControlEnabled;
 
             if (voiceControlEnabled) {
-                console.log('🎤 שליטה קולית הופעלה ידנית');
+                console.log('[Voice] שליטה קולית הופעלה ידנית');
                 startVoiceRecognition();
             } else {
-                console.log('🛑 שליטה קולית כובתה ידנית');
+                console.log('[Voice] שליטה קולית כובתה ידנית');
                 stopVoiceRecognition();
                 isVoiceActive = false;
             }
@@ -4094,7 +4609,7 @@
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             
             if (!SpeechRecognition) {
-                console.warn('⚠️ הדפדפן לא תומך בזיהוי קולי');
+                console.warn('[!] הדפדפן לא תומך בזיהוי קולי');
                 voiceRecognitionInitialized = false;
                 updateVoiceIndicator();
                 return;
@@ -4128,7 +4643,7 @@
                     voiceRestartTimeout = null;
                 }
                 updateVoiceIndicator();
-                console.log('🎤 זיהוי קולי הופעל - מאזין...');
+                console.log('[Voice] זיהוי קולי הופעל - מאזין...');
             };
 
             recognition.onresult = (event) => {
@@ -4136,30 +4651,30 @@
                 const transcriptRaw = event.results[last][0].transcript;
                 const transcript = normaliseTranscript(transcriptRaw);
                 
-                console.log('🎤 זוהה:', transcript);
+                console.log('[Voice] זוהה:', transcript);
                 
                 // חיפוש פקודה מתאימה
                 let commandExecuted = false;
                 for (const definition of voiceCommandDefinitions) {
                     if (definition.phrases.some(phrase => transcript.includes(phrase))) {
-                        console.log(`✅ פקודה קולית מזוהה: ${definition.label}`);
+                        console.log(`[V] פקודה קולית מזוהה: ${definition.label}`);
                         commandExecuted = handleVoiceCommand(definition);
                         break;
                     }
                 }
 
                 if (!commandExecuted) {
-                    console.log('❓ פקודה לא זוהתה:', transcript);
+                    console.log('[?] פקודה לא זוהתה:', transcript);
                 }
             };
 
             recognition.onerror = (event) => {
-                console.error('❌ שגיאה בזיהוי קולי:', event.error);
+                console.error('[Error] שגיאה בזיהוי קולי:', event.error);
                 
                 if (event.error === 'no-speech') {
-                    console.log('🔇 לא זוהה דיבור - ממשיך להאזין...');
+                    console.log('[Voice] לא זוהה דיבור - ממשיך להאזין...');
                 } else if (event.error === 'not-allowed') {
-                    console.error('🚫 הרשאות מיקרופון נדחו');
+                    console.error('[Error] הרשאות מיקרופון נדחו');
                     voiceControlEnabled = false;
                     isVoiceActive = false;
                     updateVoiceIndicator();
@@ -4171,10 +4686,10 @@
                 updateVoiceIndicator();
 
                 if (voiceControlEnabled) {
-                    console.log('🔄 זיהוי קולי הסתיים - מתזמן הפעלה מחדש...');
+                    console.log('[Voice] זיהוי קולי הסתיים - מתזמן הפעלה מחדש...');
                     scheduleVoiceRecognitionRestart();
                 } else {
-                    console.log('🎤 שליטה קולית כבויה - לא מאתחל מחדש');
+                    console.log('[Voice] שליטה קולית כבויה - לא מאתחל מחדש');
                 }
             };
 
@@ -4184,14 +4699,14 @@
 
         // בקשת הרשאות מהמשתמש
         async function requestAllPermissions() {
-            console.log('🔐 מבקש הרשאות מהמשתמש...');
+            console.log('[Permissions] מבקש הרשאות מהמשתמש...');
             
             const permissions = [];
             
             // 0. הרשאות מיקרופון לזיהוי קולי
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                permissions.push('✅ מיקרופון (שליטה קולית)');
+                permissions.push('[V] מיקרופון (שליטה קולית)');
                 stream.getTracks().forEach(track => track.stop()); // עצור את הזרם
                 
                 // הפעל זיהוי קולי
@@ -4199,7 +4714,7 @@
                     initVoiceRecognition();
                 }, 1000);
             } catch (e) {
-                permissions.push('❌ מיקרופון (נדחה)');
+                permissions.push('[X] מיקרופון (נדחה)');
                 console.warn('לא ניתן לקבל הרשאות מיקרופון:', e);
                 voiceRecognitionInitialized = false;
                 voiceControlEnabled = false;
@@ -4212,22 +4727,22 @@
                 try {
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
-                        permissions.push('✅ התראות');
+                        permissions.push('[V] התראות');
                         // הצג התראת דוגמה
-                        new Notification('🎵 נגן מוזיקה לרכב', {
-                            body: 'האפליקציה תמשיך לנגן גם ברקע! 🚗',
+                        new Notification('נגן מוזיקה לרכב', {
+                            body: 'האפליקציה תמשיך לנגן גם ברקע!',
                             icon: 'car-music-icon.png',
                             tag: 'welcome',
                             requireInteraction: false
                         });
                     } else {
-                        permissions.push('❌ התראות (נדחה)');
+                        permissions.push('[X] התראות (נדחה)');
                     }
                 } catch (e) {
                     console.warn('לא ניתן לבקש הרשאות התראות:', e);
                 }
             } else if (Notification.permission === 'granted') {
-                permissions.push('✅ התראות (כבר ניתנו)');
+                permissions.push('[V] התראות (כבר ניתנו)');
             }
 
             // 3. בדיקת עדכונים בעת הרשאות
@@ -4237,16 +4752,16 @@
             if ('wakeLock' in navigator) {
                 try {
                     const wakeLock = await navigator.wakeLock.request('screen');
-                    permissions.push('✅ מניעת כיבוי מסך');
-                    console.log('🔒 Wake Lock הופעל');
+                    permissions.push('[V] מניעת כיבוי מסך');
+                    console.log('[WakeLock] Wake Lock הופעל');
                 } catch (e) {
-                    permissions.push('⚠️ מניעת כיבוי מסך (ינסה שוב)');
+                    permissions.push('[!] מניעת כיבוי מסך (ינסה שוב)');
                 }
             }
             
             // 3. הצגת סיכום הרשאות
             if (permissions.length > 0) {
-                console.log('📋 הרשאות שהתקבלו:');
+                console.log('[Permissions] הרשאות שהתקבלו:');
                 permissions.forEach(p => console.log('  ' + p));
                 
                 // הצג הודעה יפה למשתמש
@@ -4255,15 +4770,15 @@
                 const notification = document.createElement('div');
                 notification.className = 'permission-notification';
                 notification.innerHTML = `
-                    <h3>🎵 נגן מוזיקה לרכב</h3>
+                    <h3>נגן מוזיקה לרכב</h3>
                     <p><strong>הרשאות שהתקבלו:</strong></p>
                     <div class="permission-list">
                         ${permissionList}
                     </div>
                     <p style="font-size: 18px; font-weight: bold;">
-                        ✨ האפליקציה תמשיך לנגן<br>גם כשתעבור לאפליקציות אחרות! 🚗
+                        האפליקציה תמשיך לנגן<br>גם כשתעבור לאפליקציות אחרות!
                     </p>
-                    <button onclick="this.parentElement.remove()">הבנתי! 👍</button>
+                    <button onclick="this.parentElement.remove()">הבנתי!</button>
                 `;
                 
                 setTimeout(() => {
@@ -4317,29 +4832,41 @@
 
         // Error Handling גלובלי
         window.addEventListener('error', function(event) {
-            console.error('❌ שגיאה גלובלית:', event.error);
+            console.error('[Error] שגיאה גלובלית:', event.error);
             // אל תציג שגיאות למשתמש - רק לוג לקונסול
         });
 
         window.addEventListener('unhandledrejection', function(event) {
-            console.error('❌ Promise נדחה:', event.reason);
+            console.error('[Error] Promise נדחה:', event.reason);
             event.preventDefault();
         });
 
         // בדיקת חיבור לאינטרנט
         window.addEventListener('online', () => {
-            console.log('✅ חיבור לאינטרנט חזר');
+            console.log('[Online] חיבור לאינטרנט חזר');
         });
 
         window.addEventListener('offline', () => {
-            console.log('⚠️ אין חיבור לאינטרנט');
+            console.log('[Offline] אין חיבור לאינטרנט');
             const currentSong = document.getElementById('currentSong');
             if (currentSong) {
-                currentSong.textContent = '⚠️ אין חיבור לאינטרנט - מנסה להתחבר מחדש...';
+                currentSong.textContent = 'אין חיבור לאינטרנט - מנסה להתחבר מחדש...';
             }
         });
     </script>
 
+    <!-- Initialize Lucide icons -->
+    <script>
+        // Ensure icons are rendered after page load
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+        window.addEventListener('load', function() {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+    </script>
 </body>
 </html>
 
