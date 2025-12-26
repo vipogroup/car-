@@ -1,5 +1,5 @@
 // Service Worker לשמירה על האפליקציה פעילה ברקע
-const CACHE_NAME = 'car-music-player-v220';
+const CACHE_NAME = 'car-music-player-v230';
 const urlsToCache = [
   'index.html',
   'manifest.json',
