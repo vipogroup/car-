@@ -1569,12 +1569,150 @@
         
         /* התאמה למחשב שולחני */
         @media (min-width: 1024px) {
+            body {
+                padding: 30px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+            }
+            
             .music-player {
-                max-width: 900px;
+                max-width: 1100px;
+                width: 95%;
+                padding: 30px;
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            }
+            
+            h2#playerTitle {
+                font-size: 24px !important;
+                margin-bottom: 20px !important;
+            }
+            
+            .layout-columns {
+                flex-direction: row !important;
+                align-items: stretch;
+                gap: 30px;
+            }
+            
+            .media-column {
+                flex: 1.2;
+                min-width: 0;
+            }
+            
+            .interface-column {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                gap: 16px;
+            }
+            
+            .video-frame {
+                height: 400px;
+                min-height: 350px;
+                border-radius: 16px;
+            }
+            
+            .control-panel {
+                padding: 20px;
+                border-radius: 16px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
             }
             
             .control-buttons {
-                margin: 10px auto;
+                margin: 16px auto;
+                gap: 12px;
+            }
+            
+            .control-row {
+                gap: 12px;
+            }
+            
+            .control-btn.icon-btn,
+            .control-btn.pill-btn {
+                width: 52px;
+                height: 52px;
+            }
+            
+            .control-btn .icon-only svg {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .playlist-name {
+                padding: 12px 16px;
+                font-size: 15px;
+                border-radius: 12px;
+            }
+            
+            .current-song-container {
+                padding: 16px 20px;
+                border-radius: 12px;
+            }
+            
+            .current-song {
+                font-size: 20px;
+            }
+            
+            .current-song-label {
+                font-size: 13px;
+            }
+            
+            #volumeControl {
+                padding: 14px 18px;
+                border-radius: 12px;
+            }
+            
+            .volume-slider {
+                height: 8px;
+            }
+            
+            .volume-slider::-webkit-slider-thumb {
+                width: 20px;
+                height: 20px;
+            }
+            
+            .settings-menu {
+                top: 20px;
+                right: 20px;
+            }
+            
+            .settings-toggle {
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+            
+            .settings-dropdown {
+                min-width: 220px;
+            }
+            
+            .playlist-selector-dropdown {
+                max-width: 400px;
+                max-height: 350px;
+            }
+            
+            .playlist-selector-item {
+                padding: 14px 16px;
+                font-size: 15px;
+            }
+        }
+        
+        /* מסכים גדולים במיוחד */
+        @media (min-width: 1400px) {
+            .music-player {
+                max-width: 1300px;
+            }
+            
+            .video-frame {
+                height: 450px;
+            }
+            
+            h2#playerTitle {
+                font-size: 28px !important;
             }
         }
         
