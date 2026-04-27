@@ -1,5 +1,6 @@
 import json
 import os
+import socket
 import sys
 import time
 import urllib.parse
@@ -8,7 +9,37 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from yt_dlp import YoutubeDL
 
 
-HOST = "127.0.0.1"
+def _parse_bind_host() -> str:
+    h = (os.environ.get("UNBLOCKED_PLAYER_HOST") or "127.0.0.1").strip()
+    if not h:
+        return "127.0.0.1"
+    if h in ("*", "all", "any", "0.0.0.0/0"):
+        return "0.0.0.0"
+    return h
+
+
+HOST = _parse_bind_host()
+
+
+def _url_hostname() -> str:
+    """Host for links opened in a browser on this machine (0.0.0.0 is not valid as a URL host)."""
+    if HOST in ("0.0.0.0", "0.0.0.0/0"):
+        return "127.0.0.1"
+    return HOST
+
+
+def _guess_lan_ipv4() -> str:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.3)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except OSError:
+        return ""
+
+
 try:
     _p = int(os.environ.get("UNBLOCKED_PLAYER_PORT", "5600"))
     PORT = _p if 1 <= _p <= 65535 else 5600
@@ -3027,17 +3058,27 @@ class Handler(BaseHTTPRequestHandler):
 
         if parsed.path == "/__player_check":
             disk_mt = int(os.path.getmtime(SCRIPT_FILE))
+            uhost = _url_hostname()
             lines = [
                 "OK_UNBLOCKED_PLAYER_V5",
                 f"script={SCRIPT_FILE}",
                 f"disk_mtime={disk_mt}",
                 f"loaded_mtime={SERVER_LOADED_MTIME}",
-                f"url=http://{HOST}:{PORT}/",
+                f"bind={HOST}:{PORT}",
+                f"url=http://{uhost}:{PORT}/",
                 "",
-                "Hebrew:",
-                "אם השורה הראשונה היא OK_UNBLOCKED_PLAYER_V5 — זה השרת הנכון (unblocked_player.py).",
-                "אם בעמוד הראשי עדיין ממשק ישן (הספרייה + תור ניגון) אבל כאן OK — יש תהליך אחר על אותו פורט או דפדפן מציג מטמון. סגרי כל Python על 5600 והפעילי מחדש, או Ctrl+Shift+Delete למטמון לכתובת זו.",
             ]
+            if HOST == "0.0.0.0":
+                lan = _guess_lan_ipv4()
+                if lan:
+                    lines.append(f"lan_url=http://{lan}:{PORT}/")
+            lines.extend(
+                [
+                    "Hebrew:",
+                    "אם השורה הראשונה היא OK_UNBLOCKED_PLAYER_V5 — זה השרת הנכון (unblocked_player.py).",
+                    "אם בעמוד הראשי עדיין ממשק ישן (הספרייה + תור ניגון) אבל כאן OK — יש תהליך אחר על אותו פורט או דפדפן מציג מטמון. סגרי כל Python על 5600 והפעילי מחדש, או Ctrl+Shift+Delete למטמון לכתובת זו.",
+                ]
+            )
             body = ("\n".join(lines) + "\n").encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
@@ -3125,12 +3166,22 @@ def main():
         print("  PowerShell:  $env:UNBLOCKED_PLAYER_PORT=5601; python unblocked_player.py")
         sys.exit(1)
 
-    url = f"http://{HOST}:{PORT}/?v={SERVER_LOADED_MTIME}"
+    uhost = _url_hostname()
+    url = f"http://{uhost}:{PORT}/?v={SERVER_LOADED_MTIME}"
     print(f"Unblocked player running: {url}")
     print(f"Script: {SCRIPT_FILE}")
     print(f"Build (mtime at server start): {SERVER_LOADED_MTIME}")
-    chk = f"http://{HOST}:{PORT}/__player_check"
+    chk = f"http://{uhost}:{PORT}/__player_check"
     print(f"בדיקת שרת (פתחי בדפדפן — חייב להתחיל ב-OK_UNBLOCKED_PLAYER_V5): {chk}")
+    if HOST == "0.0.0.0":
+        lan = _guess_lan_ipv4()
+        if lan:
+            print(
+                f"מכשיר אחר **באותה רשת (Wi-Fi / בית)**: http://{lan}:{PORT}/  (ייתכן שצריך לאפשר בחומת האש Windows לפורט {PORT})"
+            )
+        print(
+            "גישה מרחוק באינטרנט: השתמשי במנהרה (למשל ngrok, Cloudflare Tunnel) — לא מומלץ לפתוח פורט בראוטר ביתי לכולם."
+        )
     print(
         "לא להריץ 'python -m http.server' על אותו פורט כאן — זה נגן קבצים סטטי, לא השרת הזה."
     )
