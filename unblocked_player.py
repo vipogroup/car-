@@ -50,6 +50,106 @@ SCRIPT_FILE = os.path.abspath(__file__)
 # זמן שינוי הקובץ ברגע עליית התהליך — משמש לזיהוי "שרת לא הופעל מחדש אחרי עריכה"
 SERVER_LOADED_MTIME = int(os.path.getmtime(SCRIPT_FILE))
 
+# Service Worker (PWA — "התקנה" למסך הבית). עדכן מספר אם משנים לוגיקת מטמון.
+UNBLOCKED_PWA_VERSION = 1
+UNBLOCKED_SW_SOURCE = """
+const UNBLOCKED_PWA_VERSION = %d;
+const CACHE = 'unblocked-pwa-v' + UNBLOCKED_PWA_VERSION;
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE).then((cache) =>
+      cache.addAll(['/manifest.json', '/car-music-icon.png', '/unblocked-sw.js'])
+    )
+  );
+  self.skipWaiting();
+});
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((names) =>
+      Promise.all(
+        names.map((n) => {
+          if (n !== CACHE) {
+            return caches.delete(n);
+          }
+          return Promise.resolve();
+        })
+      )
+    )
+  );
+  return self.clients.claim();
+});
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  const u = new URL(event.request.url);
+  if (u.origin !== self.location.origin) {
+    return;
+  }
+  if (event.request.mode === 'navigate' || u.pathname === '/') {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+    );
+    return;
+  }
+  if (u.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+  event.respondWith(
+    fetch(event.request)
+      .then((res) => {
+        if (res && res.status === 200) {
+          const c = res.clone();
+          caches.open(CACHE).then((cache) => {
+            try {
+              cache.put(event.request, c);
+            } catch (e) {}
+          });
+        }
+        return res;
+      })
+      .catch(() => caches.match(event.request))
+  );
+});
+""".strip() % (UNBLOCKED_PWA_VERSION,)
+
+
+def unblocked_pwa_manifest_json() -> str:
+    return json.dumps(
+        {
+            "name": "מוזיקה Unblocked",
+            "short_name": "מוזיקה",
+            "description": "נגן YouTube (ספרייה, אהובים, פלייליסטים)",
+            "start_url": "/",
+            "scope": "/",
+            "id": "/",
+            "display": "standalone",
+            "display_override": ["standalone", "fullscreen", "minimal-ui"],
+            "background_color": "#121212",
+            "theme_color": "#5edfff",
+            "dir": "rtl",
+            "lang": "he",
+            "icons": [
+                {
+                    "src": "/car-music-icon.png",
+                    "sizes": "192x192",
+                    "type": "image/png",
+                    "purpose": "any",
+                },
+                {
+                    "src": "/car-music-icon.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "maskable",
+                },
+            ],
+            "categories": ["music", "entertainment"],
+            "prefer_related_applications": False,
+        },
+        ensure_ascii=False,
+    )
+
 
 def apply_youtube_auth(ydl_opts: dict) -> None:
     """
@@ -113,6 +213,15 @@ def build_html():
   <meta name="player-build" content="{SERVER_LOADED_MTIME}" />
   <meta name="player-disk-mtime" content="{disk_mtime}" />
   <title>מוזיקה v5 · נגן YouTube</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#5edfff" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="מוזיקה" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="icon" type="image/png" href="/car-music-icon.png" />
+  <link rel="apple-touch-icon" href="/car-music-icon.png" />
   <meta name="app-ui" content="v5-nav-home-playlists" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1241,6 +1350,7 @@ def build_html():
     .ui-version-strip-link:hover {{ color: #fff; }}
 
     body.car-mode .ui-version-strip {{ display: none; }}
+    body.car-mode .pwa-install-hint {{ display: none !important; }}
     body.car-mode .bottom-nav {{ display: none; }}
 
     .code-stale-banner {{
@@ -1253,6 +1363,34 @@ def build_html():
       text-align: center;
       border-bottom: 2px solid var(--accent);
       line-height: 1.45;
+    }}
+
+    .pwa-install-hint {{
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: linear-gradient(90deg, #1a2a33, #122028);
+      color: #d4f2ff;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: right;
+      border-bottom: 1px solid rgba(94, 223, 255, 0.25);
+      line-height: 1.4;
+    }}
+    .pwa-install-hint code {{ font-size: 0.78em; color: #a8e9ff; }}
+    .pwa-hint-x {{
+      flex-shrink: 0;
+      min-width: 36px;
+      min-height: 36px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.35);
+      color: #fff;
+      font-size: 1.1rem;
+      cursor: pointer;
     }}
   </style>
 </head>
@@ -1268,6 +1406,10 @@ def build_html():
     עדכנת את <code>unblocked_player.py</code> בדיסק, אבל השרת Python עדיין רץ מהזיכרון הישן.
     עצורי את השרת (Ctrl+C בחלון הטרמינל) והפעילי שוב:
     <code>python unblocked_player.py</code>
+  </div>
+  <div class="pwa-install-hint" id="pwaInstallHint" role="status" aria-label="התקנה למסך הבית">
+    <span>נגן על המובייל: <strong>הוספה למסך הבית</strong> — <span dir="ltr">Android: ⋮ → התקן / הוסף</span> · <span dir="ltr">iPhone: שיתוף → הוסף למסך הבית</span> (רצוי להפעיל עם <code>UNBLOCKED_PLAYER_HOST=0.0.0.0</code> / <code>start-server-lan</code>)</span>
+    <button type="button" class="pwa-hint-x" id="pwaHintClose" title="סגור">×</button>
   </div>
   <div class="app-root">
     <aside class="spot-sidebar" id="appSidebar" aria-label="ניווט ראשי">
@@ -2943,6 +3085,30 @@ def build_html():
       stripReloadBtn.addEventListener('click', () => hardReloadFromServer());
     }}
 
+    (function pwaInit() {{
+      if ('serviceWorker' in navigator) {{
+        navigator.serviceWorker.register('/unblocked-sw.js', {{ scope: '/' }}).catch(function () {{}});
+      }}
+      var isStandalone =
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        window.navigator.standalone === true;
+      var hint = document.getElementById('pwaInstallHint');
+      if (hint && !isStandalone) {{
+        var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {{
+          try {{ if (localStorage.getItem('pwaHintDismissed') === '1') return; }} catch (e) {{}}
+          hint.style.display = 'flex';
+        }}
+      }}
+      var c = document.getElementById('pwaHintClose');
+      if (c && hint) {{
+        c.addEventListener('click', function () {{
+          hint.style.display = 'none';
+          try {{ localStorage.setItem('pwaHintDismissed', '1'); }} catch (e) {{}}
+        }});
+      }}
+    }})();
+
     loadItems();
     refreshPlaylistUi();
     applyUiMode();
@@ -3090,6 +3256,43 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("X-Unblocked-Build", str(SERVER_LOADED_MTIME))
             self.end_headers()
             self.wfile.write(body)
+            return
+
+        if parsed.path == "/manifest.json":
+            body = unblocked_pwa_manifest_json().encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/manifest+json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if parsed.path == "/unblocked-sw.js":
+            body = UNBLOCKED_SW_SOURCE.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Service-Worker-Allowed", "/")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if parsed.path == "/car-music-icon.png":
+            icon_path = os.path.join(SCRIPT_DIR, "car-music-icon.png")
+            if os.path.isfile(icon_path):
+                with open(icon_path, "rb") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Cache-Control", "public, max-age=86400")
+                self.end_headers()
+                self.wfile.write(data)
+            else:
+                self.send_response(404)
+                self.end_headers()
             return
 
         if parsed.path == "/api/stream":
