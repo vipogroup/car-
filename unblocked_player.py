@@ -41,7 +41,9 @@ def _guess_lan_ipv4() -> str:
 
 
 try:
-    _p = int(os.environ.get("UNBLOCKED_PLAYER_PORT", "5600"))
+    # UNBLOCKED_PLAYER_PORT — מקומי. PORT — Heroku, Render, Railway ועוד (PaaS).
+    _p_raw = os.environ.get("UNBLOCKED_PLAYER_PORT") or os.environ.get("PORT", "5600")
+    _p = int(_p_raw)
     PORT = _p if 1 <= _p <= 65535 else 5600
 except ValueError:
     PORT = 5600
