@@ -14,7 +14,7 @@ Repository: https://github.com/vipogroup/car-
 1. הורדה: https://raw.githubusercontent.com/vipogroup/car-/main/local-server-unblocked.zip
 2. חליצה במחשב
 3. התקנת Python 3.10+
-4. התקנה חד-פעמית: `pip install -r requirements.txt` (או `setup-windows.ps1`)
+4. התקנה חד-פעמית: `setup-windows.bat` (או `setup-windows.ps1`)
 5. הרצת: `start-server-lan.bat`
 6. במובייל (אותה Wi-Fi): סריקת **QR** מכפתור **״מובייל · סריקת QR״** בדפדפן של המחשב — או `http://[PC-IP]:5600`
 7. בדיקה: `http://[PC-IP]:5600/__player_check` (כולל גרסת חבילה)
