@@ -16,8 +16,8 @@ Repository: https://github.com/vipogroup/car-
 3. התקנת Python 3.10+
 4. הרצת: `pip install -r requirements.txt`
 5. הרצת: `start-server-lan.bat`
-6. במובייל (אותה Wi-Fi): `http://<IP-של-המחשב>:5600`
-7. בדיקה: `http://<IP-של-המחשב>:5600/__player_check`
+6. במובייל (אותה Wi-Fi): `http://[PC-IP]:5600` (דוגמה: `http://192.168.1.50:5600`)
+7. בדיקה: `http://[PC-IP]:5600/__player_check`
 
 מדריך מלא: `LOCAL-SERVER-SETUP.md`
 
