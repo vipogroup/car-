@@ -1,6 +1,9 @@
 # Free TCP 5600 then run unblocked_player (OPEN_BROWSER=0). Used by VS Code / Cursor task.
+# לריסטארט אוטומטי בכל שמירה: restart-player-watch.ps1
+# לשמירה על פלט ישן: $env:UNBLOCKED_NO_CLEAR='1'
 $ErrorActionPreference = 'SilentlyContinue'
 Set-Location -LiteralPath $PSScriptRoot
+if ($env:UNBLOCKED_NO_CLEAR -ne '1') { Clear-Host }
 try {
   $x = Get-NetTCPConnection -LocalPort 5600 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($x) {

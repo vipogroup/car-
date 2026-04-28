@@ -1,6 +1,10 @@
 # Like restart-player.ps1 but binds LAN host (0.0.0.0).
+# אחרי שינוי ב-unblocked_player.py חייבים להריץ מחדש — Python טוען את הקוד פעם אחת בהפעלה.
+# לריסטארט אוטומטי בכל שמירה: restart-player-lan-watch.ps1 (או $env:UNBLOCKED_AUTO_RELOAD='1' לפני python)
+# לשמירה על פלט ישן: $env:UNBLOCKED_NO_CLEAR='1' לפני ההרצה
 $ErrorActionPreference = 'SilentlyContinue'
 Set-Location -LiteralPath $PSScriptRoot
+if ($env:UNBLOCKED_NO_CLEAR -ne '1') { Clear-Host }
 $env:UNBLOCKED_PLAYER_HOST = '0.0.0.0'
 try {
   $x = Get-NetTCPConnection -LocalPort 5600 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1

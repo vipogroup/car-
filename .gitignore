@@ -1,3 +1,6 @@
 __pycache__/
 *.py[cod]
 *.pyo
+
+# שירים שהורדו לניגון מקומי — לא לדחוף ל-GitHub
+offline_library/
