@@ -1,1 +1,33 @@
-{"name": "מוזיקה Unblocked", "short_name": "מוזיקה", "description": "נגן YouTube (ספרייה, אהובים, פלייליסטים)", "start_url": "/", "scope": "/", "id": "/", "display": "standalone", "display_override": ["standalone", "fullscreen", "minimal-ui"], "background_color": "#121212", "theme_color": "#5edfff", "dir": "rtl", "lang": "he", "icons": [{"src": "/car-music-icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}, {"src": "/car-music-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}], "categories": ["music", "entertainment"], "prefer_related_applications": false}
+{
+  "name": "מוזיקה Unblocked",
+  "short_name": "מוזיקה",
+  "description": "נגן YouTube — ספרייה, אהובים, פלייליסטים (ממשק v5)",
+  "start_url": "car-player-standalone.html",
+  "scope": "./",
+  "id": "unblocked-player-car",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "background_color": "#121212",
+  "theme_color": "#5edfff",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {
+      "src": "car-music-icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "orientation": "any",
+  "dir": "rtl",
+  "lang": "he",
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "share_target": {
+    "action": "car-player-standalone.html",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded"
+  }
+}

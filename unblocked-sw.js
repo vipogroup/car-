@@ -1,9 +1,13 @@
-const UNBLOCKED_PWA_VERSION = 2;
+const UNBLOCKED_PWA_VERSION = 4;
 const CACHE = 'unblocked-pwa-v' + UNBLOCKED_PWA_VERSION;
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
-      cache.addAll(['/manifest.json', '/car-music-icon.png', '/unblocked-sw.js'])
+      cache.addAll([
+        new URL('manifest.json', self.location).href,
+        new URL('car-music-icon.png', self.location).href,
+        new URL('unblocked-sw.js', self.location).href,
+      ])
     )
   );
   self.skipWaiting();
@@ -31,13 +35,13 @@ self.addEventListener('fetch', (event) => {
   if (u.origin !== self.location.origin) {
     return;
   }
-  if (event.request.mode === 'navigate' || u.pathname === '/') {
+  if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
     );
     return;
   }
-  if (u.pathname.startsWith('/api/')) {
+  if (u.pathname.includes('/api/')) {
     event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }

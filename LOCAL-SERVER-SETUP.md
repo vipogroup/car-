@@ -3,7 +3,7 @@
 1. Install Python 3.10+ from [python.org](https://www.python.org) (enable **Add Python to PATH**).
 2. Download and extract `local-server-unblocked.zip` from the GitHub repo.
 3. In the folder, run once: `setup-windows.bat`  
-   (alternative: `powershell -ExecutionPolicy Bypass -File .\setup-windows.ps1`)
+   (alternative: `powershell -ExecutionPolicy Bypass -File .\\setup-windows.ps1`)
 4. Run **`start-server-lan.bat`**.
 5. On this PC, open the player in the browser. Click **"מובייל · סריקת QR"** at the top and scan the code from your phone (same Wi‑Fi).  
    Or on the phone open: `http://[PC-IP]:5600/` (see terminal line `lan_url=...` or `http://192.168.x.x:5600/`).
