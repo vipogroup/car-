@@ -195,6 +195,7 @@ function applyEnvironmentUI() {
   if (statusEl) {
     statusEl.textContent = state.env.hasBackend ? 'שרת מקומי זמין' : 'ללא שרת מלא';
   }
+  maybeLanMobileInstallHint();
 }
 
 // ============================================================
@@ -1278,6 +1279,20 @@ function isStandaloneInstalled() {
   }
 }
 
+function maybeLanMobileInstallHint() {
+  if (!isMobileClient() || isStandaloneInstalled()) return;
+  if (!state.env.hasBackend) return;
+  try {
+    if (sessionStorage.getItem('aurora.lanInstallHint')) return;
+    sessionStorage.setItem('aurora.lanInstallHint', '1');
+  } catch {
+    return;
+  }
+  setTimeout(() => {
+    toast('מחוברים לשרת הבית — להתקנה למסך הבית: תפריט Chrome ⋮ → התקן אפליקציה (או המשיכי בדפדפן)', '');
+  }, 3500);
+}
+
 function isNewUserSession() {
   try {
     return (
@@ -1505,10 +1520,20 @@ function setupInstallPrompt() {
   setTimeout(maybeShowInstallModal, 1200);
 }
 
-function copyRunCommand() {
-  const cmd = 'python -m http.server 5600 --bind 0.0.0.0';
+const AUTO_INSTALL_SCRIPT_RAW =
+  'https://raw.githubusercontent.com/vipogroup/car-/main/scripts/install-and-run.ps1';
+
+function copyAutoInstallCommand() {
+  const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm '${AUTO_INSTALL_SCRIPT_RAW}' | iex"`;
   navigator.clipboard?.writeText(cmd)
-    .then(() => toast('פקודת הרצה הועתקה', 'success'))
+    .then(() => toast('הדביקי ב-PowerShell ולחצי Enter (אחרי התקנת Python)', 'success'))
+    .catch(() => toast('העתקה נכשלה', 'error'));
+}
+
+function copyRunCommand() {
+  const cmd = 'pip install -r requirements.txt\r\n.\\start-server-lan.bat';
+  navigator.clipboard?.writeText(cmd)
+    .then(() => toast('פקודות הועתקו — בתיקייה אחרי חילוץ ZIP', 'success'))
     .catch(() => toast('העתקה נכשלה', 'error'));
 }
 
@@ -1673,6 +1698,7 @@ function bindEvents() {
         case 'close-lan-info': closeModal('lanInfoModal'); return;
         case 'open-local-setup': openModal('localSetupModal'); return;
         case 'close-local-setup': closeModal('localSetupModal'); return;
+        case 'copy-auto-install': copyAutoInstallCommand(); return;
         case 'copy-run-command': copyRunCommand(); return;
         case 'set-run-mode': {
           const btn = e.target.closest('[data-action="set-run-mode"]');

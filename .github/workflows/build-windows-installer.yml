@@ -1,0 +1,44 @@
+# Builds CarPlayerAurora-Setup.exe with Inno Setup. Upload artifact; on tag car-installer-* also creates a GitHub Release.
+name: Build Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "car-installer-*"
+
+jobs:
+  innosetup:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Compile .iss
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC not found: $iscc" }
+          & $iscc "installer\CarPlayerAurora.iss"
+          Get-Item "installer\Output\CarPlayerAurora-Setup.exe" | Format-List *
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CarPlayerAurora-Setup
+          path: installer/Output/CarPlayerAurora-Setup.exe
+
+      - name: Create GitHub Release (tag only)
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          gh release create $tag "installer/Output/CarPlayerAurora-Setup.exe" `
+            --title $tag `
+            --notes "Windows installer for Car Player / Aurora. Requires Python 3.10+ on PATH. Installs to %LOCALAPPDATA%\\CarPlayer-Aurora and starts the local server at the end."

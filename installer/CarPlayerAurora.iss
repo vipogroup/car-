@@ -1,0 +1,71 @@
+; Inno Setup 6 — build from repo root:
+;   & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "installer\CarPlayerAurora.iss"
+; Installs to %LOCALAPPDATA%\CarPlayer-Aurora (no admin). Requires Python 3.10+ on PATH.
+
+#define MyAppName "Car Player · Aurora"
+#define MyAppVersion "1.0.0"
+#define RepoRoot ".."
+
+[Setup]
+AppId={{B4E8C9D1-2F3A-4E5B-9C0D-1A2B3C4D5E6F}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher=vipogroup
+DefaultDirName={localappdata}\CarPlayer-Aurora
+DefaultGroupName=Car Player
+DisableProgramGroupPage=yes
+OutputDir=Output
+OutputBaseFilename=CarPlayerAurora-Setup
+Compression=lzma2
+SolidCompression=yes
+WizardStyle=modern
+PrivilegesRequired=lowest
+ArchitecturesInstallIn64BitMode=x64
+UninstallDisplayIcon={app}\car-music-icon.png
+SetupLogging=yes
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopserver"; Description: "Desktop shortcut: start server"; GroupDescription: "Shortcuts:"; Flags: checked
+Name: "desktopbrowser"; Description: "Desktop shortcut: open Aurora"; GroupDescription: "Shortcuts:"; Flags: checked
+
+[Files]
+Source: "{#RepoRoot}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion createallsubdirs; \
+  Excludes: ".git\*;.github\*;offline_library\*;*.pyc;__pycache__\*;.cursor\*;terminals\*;mcps\*;installer\Output\*"
+
+[Icons]
+Name: "{group}\Start Car Player server"; Filename: "{app}\start-server-lan.bat"; WorkingDir: "{app}"
+Name: "{group}\Open Aurora"; Filename: "{app}\open-aurora.bat"; WorkingDir: "{app}"
+Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Car Player server"; Filename: "{app}\start-server-lan.bat"; WorkingDir: "{app}"; Tasks: desktopserver
+Name: "{autodesktop}\Aurora"; Filename: "{app}\open-aurora.bat"; WorkingDir: "{app}"; Tasks: desktopbrowser
+
+[Run]
+Filename: "{app}\installer-postinstall.cmd"; WorkingDir: "{app}"; StatusMsg: "Installing Python packages..."; Flags: runhidden waituntilterminated
+Filename: "{app}\start-server-lan.bat"; Description: "Start local server now"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent shellexec
+
+[Code]
+function PythonOnPath: Boolean;
+var
+  R: Integer;
+begin
+  Result := Exec(ExpandConstant('{cmd}'), '/c python --version', '', SW_HIDE, ewWaitUntilTerminated, R) and (R = 0);
+  if not Result then
+    Result := Exec(ExpandConstant('{cmd}'), '/c py -3 --version', '', SW_HIDE, ewWaitUntilTerminated, R) and (R = 0);
+end;
+
+function InitializeSetup: Boolean;
+begin
+  if not PythonOnPath then
+  begin
+    MsgBox('Python 3.10+ is required on PATH.'#13#10 +
+           'Install: winget install Python.Python.3.13'#13#10 +
+           'Enable "Add python.exe to PATH", then run this installer again.',
+           mbError, MB_OK);
+    Result := false;
+  end
+  else
+    Result := true;
+end;

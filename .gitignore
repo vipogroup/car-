@@ -4,3 +4,6 @@ __pycache__/
 
 # שירים שהורדו לניגון מקומי — לא לדחוף ל-GitHub
 offline_library/
+
+# Inno Setup output
+installer/Output/

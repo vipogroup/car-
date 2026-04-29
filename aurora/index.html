@@ -424,22 +424,37 @@
         <button class="ar-iconbtn-mini" data-action="close-local-setup" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
       </header>
       <div class="ar-ts-body">
-        <p>מטרה: להפעיל את המערכת מהמחשב ולפתוח אותה מהמובייל באותה רשת Wi-Fi.</p>
+        <p>מטרה: שרת מלא במחשב → Aurora במובייל באותה Wi‑Fi → חיפוש YouTube → שמירה <strong>במכשיר</strong> → האזנה גם בלי רשת הבית.</p>
+        <p><strong>שלב א׳ — מתקין Windows (מומלץ)</strong></p>
         <ol>
-          <li>במחשב התקיני Python (אם חסר):
-            <br/><code dir="ltr">winget install Python.Python.3.13</code>
-          </li>
-          <li>הורידי את קוד המערכת:
-            <br/><a href="https://github.com/vipogroup/car-/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download ZIP</a>
-          </li>
-          <li>חלצי את הקבצים, פתחי טרמינל בתיקייה והריצי:
-            <br/><code dir="ltr">python -m http.server 5600 --bind 0.0.0.0</code>
-          </li>
-          <li>במובייל (אותה רשת): פתחי <code dir="ltr">http://&lt;IP-של-המחשב&gt;:5600/aurora/index.html</code></li>
+          <li>התקיני <strong>Python 3.10+</strong> עם <strong>Add python.exe to PATH</strong> (אם חסר): <code dir="ltr">winget install Python.Python.3.13</code> — ואז הפעילי מחדש את המחשב או לפחות סגרי את כל חלונות PowerShell.</li>
+          <li>הורידי את הקובץ <code dir="ltr">CarPlayerAurora-Setup.exe</code>, הריצי אותו ואשרי את אשף ההתקנה של Windows. בסוף ייפתחו חלון שרת (השאירי פתוח) ודפדפן עם Aurora.</li>
+          <li>במובייל (אותה Wi‑Fi): כפתור <strong>חיבור מובייל באותה רשת</strong> או <code dir="ltr">http://&lt;IP-של-המחשב&gt;:5600/aurora/index.html</code> — אחרי ~3 שניות תופיע התראה להתקנה למסך הבית.</li>
+          <li>חיפוש → ניגון → <strong>אופליין</strong> → <strong>העתק למכשיר</strong>. אחר כך מצב <strong>רק במכשיר</strong> לניגון בלי השרת.</li>
+        </ol>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 16px">
+          <a class="ar-btn ar-btn-primary" href="https://github.com/vipogroup/car-/releases/latest/download/CarPlayerAurora-Setup.exe">הורד CarPlayerAurora-Setup.exe</a>
+          <a class="ar-btn" href="https://github.com/vipogroup/car-/releases" target="_blank" rel="noopener">עמוד גרסאות</a>
+        </div>
+        <p style="color:var(--text-3);font-size:0.88rem">אם ההורדה מחזירה 404 — צריך לבנות מתקין ב-GitHub (Actions → <em>Build Windows installer</em>) או ליצור Release עם הקובץ; עד אז השתמשי בשלב ב׳.</p>
+        <p><strong>שלב ב׳ — PowerShell (אם אין .exe)</strong></p>
+        <ol>
+          <li>פתחי PowerShell, לחצי <strong>העתק פקודת התקנה אוטומטית</strong> והדביקי → Enter. (מוריד ל־<code dir="ltr">%USERPROFILE%\CarPlayer-Aurora</code>, מתקין חבילות, מפעיל שרת.)</li>
+        </ol>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;margin-bottom:16px">
+          <button type="button" class="ar-btn ar-btn-primary" data-action="copy-auto-install">העתק פקודת התקנה אוטומטית</button>
+          <a class="ar-btn" href="https://github.com/vipogroup/car-/blob/main/scripts/install-and-run.ps1" target="_blank" rel="noopener">צפי בסקריפט</a>
+        </div>
+        <p><strong>שלב ג׳ — התקנה ידנית (ZIP)</strong></p>
+        <ol>
+          <li><a href="https://github.com/vipogroup/car-/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download ZIP</a> → חילוץ לתיקייה.</li>
+          <li>פעם ראשונה בתיקייה: <code dir="ltr">pip install -r requirements.txt</code></li>
+          <li>כל הפעלה: לחיצה כפולה על <code dir="ltr">start-server-lan.bat</code> (לא <code dir="ltr">http.server</code>).</li>
+          <li>מחשב: <code dir="ltr">http://127.0.0.1:5600/aurora/index.html</code> · מובייל באותה רשת: <code dir="ltr">http://&lt;IP&gt;:5600/aurora/index.html</code></li>
         </ol>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-          <button type="button" class="ar-btn ar-btn-primary" data-action="copy-run-command">העתק פקודת הרצה</button>
-          <button type="button" class="ar-btn" data-action="open-lan-info">פתח מדריך חיבור מובייל</button>
+          <button type="button" class="ar-btn" data-action="copy-run-command">העתק פקודות (ידני: pip + bat)</button>
+          <button type="button" class="ar-btn" data-action="open-lan-info">מדריך חיבור מובייל</button>
         </div>
       </div>
     </div>
