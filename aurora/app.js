@@ -20,6 +20,9 @@ const INSTALL_DISMISSED_KEY = 'aurora.installPromptDismissed';
 const BUNDLE_FP_KEY = 'aurora.uiBundleFingerprint';
 const LAST_APPLIED_BUNDLE_AT_KEY = 'aurora.lastBundleAppliedAt';
 const KEYS_RUN_MODE = 'aurora.runMode';
+/** Same URL as כפתור ההורדה ב־localSetupModal — GitHub Releases latest asset */
+const WINDOWS_INSTALLER_DOWNLOAD_URL =
+  'https://github.com/vipogroup/car-player-aurora/releases/latest/download/CarPlayerAurora-Setup.exe';
 let deferredInstallPrompt = null;
 
 // ============================================================
@@ -1584,6 +1587,23 @@ function copyRunCommand() {
     .catch(() => toast('העתקה נכשלה', 'error'));
 }
 
+/** Starts .exe download in the same user gesture (Chrome allows; fallback: tab with file). */
+function triggerWindowsInstallerDownload() {
+  try {
+    const a = document.createElement('a');
+    a.href = WINDOWS_INSTALLER_DOWNLOAD_URL;
+    a.download = 'CarPlayerAurora-Setup.exe';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.referrerPolicy = 'no-referrer-when-downgrade';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { try { a.remove(); } catch (_) { /* ignore */ } }, 500);
+  } catch (_) {
+    toast('לא הצלחתי להתחיל הורדה — לחצי ״הורד״ בתוך החלון', 'error');
+  }
+}
+
 function openPlayer() { state.playerOpen = true; $('.ar-app').classList.add('is-player-open'); }
 function closePlayer() { state.playerOpen = false; $('.ar-app').classList.remove('is-player-open'); }
 function openQueue() {
@@ -1743,7 +1763,10 @@ function bindEvents() {
           openModal('lanInfoModal');
           return;
         case 'close-lan-info': closeModal('lanInfoModal'); return;
-        case 'open-local-setup': openModal('localSetupModal'); return;
+        case 'open-local-setup':
+          openModal('localSetupModal');
+          triggerWindowsInstallerDownload();
+          return;
         case 'close-local-setup': closeModal('localSetupModal'); return;
         case 'copy-auto-install': copyAutoInstallCommand(); return;
         case 'copy-run-command': copyRunCommand(); return;
