@@ -26,7 +26,8 @@ jobs:
             exit 1
           fi
           SHA=$(cat $FILES | sha256sum | awk '{print $1}')
-          printf '%s\n' "{\"sha\":\"${SHA}\"}" > aurora/bundle-fingerprint.json
+          TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          printf '%s\n' "{\"sha\":\"${SHA}\",\"updatedAt\":\"${TS}\"}" > aurora/bundle-fingerprint.json
           cat aurora/bundle-fingerprint.json
 
       - name: Commit and push if changed

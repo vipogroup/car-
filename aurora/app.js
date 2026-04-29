@@ -18,6 +18,7 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const APP = window.__AURORA__ || { playlist: [], lanUrl: '', build: '', version: '' };
 const INSTALL_DISMISSED_KEY = 'aurora.installPromptDismissed';
 const BUNDLE_FP_KEY = 'aurora.uiBundleFingerprint';
+const LAST_APPLIED_BUNDLE_AT_KEY = 'aurora.lastBundleAppliedAt';
 const KEYS_RUN_MODE = 'aurora.runMode';
 let deferredInstallPrompt = null;
 
@@ -1412,6 +1413,48 @@ async function registerServiceWorkerForUpdates() {
   }
 }
 
+function formatHebrewDateTime(iso) {
+  try {
+    return new Date(iso).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' });
+  } catch {
+    return String(iso);
+  }
+}
+
+async function refreshUpdateMetaDisplays() {
+  const elR = $('#sidebarUpdateRemote');
+  const elL = $('#sidebarUpdateLocal');
+  const infoR = $('#updateInfoRemote');
+  const infoL = $('#updateInfoLocal');
+  let remoteStr = '—';
+  let localStr = '—';
+  try {
+    const u = `${new URL('bundle-fingerprint.json', import.meta.url).href}?t=${Date.now()}`;
+    const r = await fetch(u, { cache: 'no-store' });
+    if (r.ok) {
+      const j = await r.json();
+      if (j.updatedAt) remoteStr = formatHebrewDateTime(j.updatedAt);
+      else if (j.sha) remoteStr = `מזהה ${String(j.sha).slice(0, 12)}…`;
+    } else {
+      remoteStr = 'לא זמין';
+    }
+  } catch {
+    remoteStr = '—';
+  }
+  try {
+    const t = localStorage.getItem(LAST_APPLIED_BUNDLE_AT_KEY);
+    localStr = t ? formatHebrewDateTime(t) : 'טרם ריענון מלא מהאתר';
+  } catch {
+    localStr = '—';
+  }
+  const br = `בשרת: ${remoteStr}`;
+  const bl = `אצלך: ${localStr}`;
+  if (elR) elR.textContent = br;
+  if (elL) elL.textContent = bl;
+  if (infoR) infoR.textContent = remoteStr;
+  if (infoL) infoL.textContent = localStr;
+}
+
 async function runUpdateCheck() {
   if ($('#updateModal')?.classList.contains('is-open')) return;
   const remote = await fetchRemoteBundleFingerprint();
@@ -1458,6 +1501,9 @@ async function applyBundleUpdate() {
   if (fp == null) return;
   try {
     localStorage.setItem(BUNDLE_FP_KEY, fp);
+    try {
+      localStorage.setItem(LAST_APPLIED_BUNDLE_AT_KEY, new Date().toISOString());
+    } catch (_) { /* ignore */ }
     sessionStorage.removeItem('aurora.updateDismissedFor');
     closeModal('updateModal');
     state.pendingBundleFingerprint = null;
@@ -1478,6 +1524,7 @@ async function applyBundleUpdate() {
 
 function maybeShowInstallModal() {
   if ($('#updateModal')?.classList.contains('is-open')) return;
+  if ($('#updateInfoModal')?.classList.contains('is-open')) return;
   if (!isMobileClient() || isStandaloneInstalled()) return;
   if (!isNewUserSession()) return;
   if (loadJSON(INSTALL_DISMISSED_KEY, false)) return;
@@ -1700,6 +1747,20 @@ function bindEvents() {
         case 'close-local-setup': closeModal('localSetupModal'); return;
         case 'copy-auto-install': copyAutoInstallCommand(); return;
         case 'copy-run-command': copyRunCommand(); return;
+        case 'open-update-info':
+          void refreshUpdateMetaDisplays();
+          openModal('updateInfoModal');
+          return;
+        case 'close-update-info':
+          closeModal('updateInfoModal');
+          return;
+        case 'check-app-update-now':
+          void (async () => {
+            await runUpdateCheck();
+            await refreshUpdateMetaDisplays();
+            toast('בדיקה הושלמה', 'success');
+          })();
+          return;
         case 'set-run-mode': {
           const btn = e.target.closest('[data-action="set-run-mode"]');
           const mode = btn?.dataset.mode;
@@ -1803,7 +1864,7 @@ function bindEvents() {
     // Click outside palette closes it
     if (state.paletteOpen && !e.target.closest('.ar-palette-card')) closePalette();
     // Click outside modals closes them
-    ['eqModal', 'qrModal', 'lanInfoModal', 'localSetupModal', 'installModal', 'tsModal', 'publicLinkModal'].forEach((id) => {
+    ['eqModal', 'qrModal', 'lanInfoModal', 'localSetupModal', 'installModal', 'tsModal', 'publicLinkModal', 'updateInfoModal'].forEach((id) => {
       const m = $('#' + id);
       if (m.classList.contains('is-open') && e.target === m) m.classList.remove('is-open');
     });
@@ -1826,6 +1887,7 @@ function bindEvents() {
       else if (state.playerOpen) closePlayer();
       else if (state.queueOpen) closeQueue();
       else if ($('#updateModal')?.classList.contains('is-open')) dismissAppUpdateModal();
+      else if ($('#updateInfoModal')?.classList.contains('is-open')) closeModal('updateInfoModal');
       else ['eqModal', 'qrModal', 'lanInfoModal', 'localSetupModal', 'installModal', 'tsModal', 'publicLinkModal'].forEach((id) => closeModal(id));
       return;
     }
@@ -1957,6 +2019,7 @@ async function init() {
   bindSeek();
   bindEvents();
   await setupAutoUpdate();
+  await refreshUpdateMetaDisplays();
   bindSearchView();
   buildEqUI();
   setupInstallPrompt();

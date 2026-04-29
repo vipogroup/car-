@@ -90,6 +90,14 @@
       <button class="ar-nav-item" data-view="favorites"><svg class="ic"><use href="#i-heart"/></svg><span>אהובים</span></button>
       <button class="ar-nav-item" data-view="playlists"><svg class="ic"><use href="#i-music"/></svg><span>פלייליסטים</span></button>
       <button class="ar-nav-item" data-view="offline"><svg class="ic"><use href="#i-cloud"/></svg><span>אופליין</span></button>
+      <button type="button" class="ar-nav-item ar-nav-item--stack" data-action="open-update-info" aria-label="עדכון מערכת">
+        <svg class="ic"><use href="#i-refresh"/></svg>
+        <span class="ar-nav-stack">
+          <span class="ar-nav-stack-title">עדכון מערכת</span>
+          <span class="ar-nav-stack-line" id="sidebarUpdateRemote">בשרת: —</span>
+          <span class="ar-nav-stack-line" id="sidebarUpdateLocal">אצלך: —</span>
+        </span>
+      </button>
     </nav>
     <div class="ar-nav-footer">
       <div class="ar-nav-status">
@@ -455,6 +463,22 @@
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
           <button type="button" class="ar-btn" data-action="copy-run-command">העתק פקודות (ידני: pip + bat)</button>
           <button type="button" class="ar-btn" data-action="open-lan-info">מדריך חיבור מובייל</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ar-modal" id="updateInfoModal" aria-hidden="true">
+    <div class="ar-modal-card">
+      <header class="ar-modal-head">
+        <h3>עדכון מערכת</h3>
+        <button class="ar-iconbtn-mini" data-action="close-update-info" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="ar-ts-body">
+        <p><strong>בשרת</strong> (GitHub / קובץ bundle): <span id="updateInfoRemote">—</span></p>
+        <p><strong>אצלך במכשיר</strong> (אחרי לחיצה על ״עדכן עכשיו״): <span id="updateInfoLocal">—</span></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button type="button" class="ar-btn ar-btn-primary" data-action="check-app-update-now">בדוק אם יש עדכון</button>
         </div>
       </div>
     </div>
