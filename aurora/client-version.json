@@ -1,5 +1,5 @@
 {
   "version": 2,
   "updatedAt": "2026-04-29",
-  "note": "Bump \"version\" (integer) whenever you ship UI/JS changes so installed PWAs get the update prompt."
+  "note": "Optional fallback only when the server does not send ETag on app.js (HEAD). Prefer automatic bundle-fingerprint.json (CI) + ETag (local server)."
 }

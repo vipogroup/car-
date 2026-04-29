@@ -17,7 +17,7 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 const APP = window.__AURORA__ || { playlist: [], lanUrl: '', build: '', version: '' };
 const INSTALL_DISMISSED_KEY = 'aurora.installPromptDismissed';
-const CLIENT_BUNDLE_VERSION_KEY = 'aurora.clientBundleVersion';
+const BUNDLE_FP_KEY = 'aurora.uiBundleFingerprint';
 const KEYS_RUN_MODE = 'aurora.runMode';
 let deferredInstallPrompt = null;
 
@@ -49,7 +49,7 @@ const state = {
   env: { hasBackend: false, checked: false },
   runMode: loadJSON(KEYS_RUN_MODE, 'auto'),
   effectiveRunMode: 'server',
-  pendingUpdateVersion: null,
+  pendingBundleFingerprint: null,
 
   currentTrack: null,
   currentSource: 'library',
@@ -1306,22 +1306,72 @@ function setInstallPromptText() {
   host.innerHTML = '<p>ב־Android: פתחי תפריט דפדפן (⋮) ואז <strong>התקן אפליקציה</strong> / <strong>Add to Home screen</strong>.</p>';
 }
 
-function normalizeBundleVersion(v) {
+function normalizeClientVersion(v) {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
   if (typeof v === 'string' && /^\d+$/.test(v.trim())) return parseInt(v.trim(), 10);
   return null;
 }
 
-async function fetchPublishedClientVersion() {
+const BUNDLE_HEAD_FILES = ['app.js', 'styles.css', 'index.html', 'icons.js', 'color.js', 'visualizer.js', 'device-offline.js'];
+
+/** Fingerprint: combined ETags from core UI files (any file change ⇒ update), else bundle-fingerprint.json (CI), else client-version. */
+async function fetchRemoteBundleFingerprint() {
+  const parts = [];
+  for (const name of BUNDLE_HEAD_FILES) {
+    try {
+      const url = new URL(name, import.meta.url).href;
+      const r = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+      if (!r.ok) {
+        parts.length = 0;
+        break;
+      }
+      const etag = r.headers.get('etag');
+      const lm = r.headers.get('last-modified');
+      if (etag) parts.push(etag.trim());
+      else if (lm) parts.push(`lm:${lm}`);
+      else {
+        parts.length = 0;
+        break;
+      }
+    } catch {
+      parts.length = 0;
+      break;
+    }
+  }
+  if (parts.length === BUNDLE_HEAD_FILES.length) {
+    return `m:${parts.join('|')}`;
+  }
+  try {
+    const u = `${new URL('bundle-fingerprint.json', import.meta.url).href}?t=${Date.now()}`;
+    const r = await fetch(u, { cache: 'no-store' });
+    if (r.ok) {
+      const j = await r.json();
+      if (j && typeof j.sha === 'string' && j.sha.length >= 16) return `s:${j.sha}`;
+    }
+  } catch {
+    /* ignore */
+  }
   try {
     const url = `${new URL('client-version.json', import.meta.url).href}?t=${Date.now()}`;
     const r = await fetch(url, { cache: 'no-store' });
     if (!r.ok) return null;
     const j = await r.json();
-    return normalizeBundleVersion(j?.version);
+    const v = normalizeClientVersion(j?.version);
+    return v != null ? `cv:${v}` : null;
   } catch {
     return null;
   }
+}
+
+function previewFingerprint(fp) {
+  if (!fp) return '—';
+  if (fp.startsWith('s:')) {
+    const h = fp.slice(2);
+    return h.length > 14 ? `${h.slice(0, 14)}…` : h;
+  }
+  if (fp.startsWith('cv:')) return fp.slice(3);
+  const raw = fp.startsWith('m:') ? fp.slice(2) : fp;
+  return raw.length > 36 ? `${raw.slice(0, 36)}…` : raw;
 }
 
 async function registerServiceWorkerForUpdates() {
@@ -1349,24 +1399,19 @@ async function registerServiceWorkerForUpdates() {
 
 async function runUpdateCheck() {
   if ($('#updateModal')?.classList.contains('is-open')) return;
-  const remoteNum = await fetchPublishedClientVersion();
-  if (remoteNum == null) return;
-  const stored = localStorage.getItem(CLIENT_BUNDLE_VERSION_KEY);
+  const remote = await fetchRemoteBundleFingerprint();
+  if (remote == null) return;
+  const stored = localStorage.getItem(BUNDLE_FP_KEY);
   if (stored == null || stored === '') {
-    localStorage.setItem(CLIENT_BUNDLE_VERSION_KEY, String(remoteNum));
+    localStorage.setItem(BUNDLE_FP_KEY, remote);
     return;
   }
-  const localNum = normalizeBundleVersion(stored);
-  if (localNum == null) {
-    localStorage.setItem(CLIENT_BUNDLE_VERSION_KEY, String(remoteNum));
-    return;
-  }
-  if (remoteNum <= localNum) return;
+  if (stored === remote) return;
   const dismissed = sessionStorage.getItem('aurora.updateDismissedFor');
-  if (dismissed != null && normalizeBundleVersion(dismissed) === remoteNum) return;
-  state.pendingUpdateVersion = remoteNum;
-  const el = $('#updateRemoteVersion');
-  if (el) el.textContent = String(remoteNum);
+  if (dismissed != null && dismissed === remote) return;
+  state.pendingBundleFingerprint = remote;
+  const el = $('#updateFingerprintPreview');
+  if (el) el.textContent = previewFingerprint(remote);
   openModal('updateModal');
 }
 
@@ -1386,21 +1431,21 @@ async function setupAutoUpdate() {
 }
 
 function dismissAppUpdateModal() {
-  if (state.pendingUpdateVersion != null) {
-    sessionStorage.setItem('aurora.updateDismissedFor', String(state.pendingUpdateVersion));
+  if (state.pendingBundleFingerprint != null) {
+    sessionStorage.setItem('aurora.updateDismissedFor', state.pendingBundleFingerprint);
   }
-  state.pendingUpdateVersion = null;
+  state.pendingBundleFingerprint = null;
   closeModal('updateModal');
 }
 
 async function applyBundleUpdate() {
-  const v = state.pendingUpdateVersion;
-  if (v == null) return;
+  const fp = state.pendingBundleFingerprint;
+  if (fp == null) return;
   try {
-    localStorage.setItem(CLIENT_BUNDLE_VERSION_KEY, String(v));
+    localStorage.setItem(BUNDLE_FP_KEY, fp);
     sessionStorage.removeItem('aurora.updateDismissedFor');
     closeModal('updateModal');
-    state.pendingUpdateVersion = null;
+    state.pendingBundleFingerprint = null;
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map((reg) => reg.unregister()));

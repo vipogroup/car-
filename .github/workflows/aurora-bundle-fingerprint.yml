@@ -1,0 +1,42 @@
+# Recomputes a hash of Aurora UI files and commits bundle-fingerprint.json so
+# static hosts (GitHub Pages) expose a changing fingerprint without manual bumps.
+name: Aurora bundle fingerprint
+
+on:
+  push:
+    branches: [main, master]
+
+jobs:
+  update:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute fingerprint
+        run: |
+          set -e
+          FILES=$(ls aurora/*.js aurora/*.css aurora/index.html 2>/dev/null | LC_ALL=C sort || true)
+          if [ -z "$FILES" ]; then
+            echo "No aurora UI files to hash"
+            exit 1
+          fi
+          SHA=$(cat $FILES | sha256sum | awk '{print $1}')
+          printf '%s\n' "{\"sha\":\"${SHA}\"}" > aurora/bundle-fingerprint.json
+          cat aurora/bundle-fingerprint.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add aurora/bundle-fingerprint.json
+          if git diff --cached --quiet; then
+            echo "No fingerprint change"
+            exit 0
+          fi
+          git commit -m "chore: update Aurora bundle fingerprint [skip ci]"
+          git push

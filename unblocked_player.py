@@ -1,3 +1,5 @@
+import email.utils
+import hashlib
 import json
 import os
 import socket
@@ -6191,6 +6193,52 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_aurora_static(self, path: str, *, send_body: bool) -> None:
+        ext = os.path.splitext(path)[1].lower()
+        mime = AURORA_MIME.get(ext, "application/octet-stream")
+        try:
+            with open(path, "rb") as fh:
+                data = fh.read()
+        except OSError:
+            self.send_response(500)
+            self.end_headers()
+            return
+        try:
+            etag_body = hashlib.md5(data, usedforsecurity=False).hexdigest()
+        except TypeError:
+            etag_body = hashlib.md5(data).hexdigest()
+        etag = '"' + etag_body + '"'
+        mt = int(os.path.getmtime(path))
+        lm = email.utils.formatdate(mt, usegmt=True)
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("ETag", etag)
+        self.send_header("Last-Modified", lm)
+        self.end_headers()
+        if send_body:
+            self.wfile.write(data)
+
+    def _try_serve_aurora(self, send_body: bool) -> bool:
+        parsed = urllib.parse.urlparse(self.path)
+        if not parsed.path.startswith("/aurora/"):
+            return False
+        rel = parsed.path[len("/aurora/"):]
+        path = _safe_aurora_path(rel)
+        if not path:
+            self.send_response(404)
+            self.end_headers()
+            return True
+        self._send_aurora_static(path, send_body=send_body)
+        return True
+
+    def do_HEAD(self):
+        if self._try_serve_aurora(False):
+            return
+        self.send_response(404)
+        self.end_headers()
+
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path == "/":
@@ -6218,29 +6266,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
-        if parsed.path.startswith("/aurora/"):
-            rel = parsed.path[len("/aurora/"):]
-            path = _safe_aurora_path(rel)
-            if not path:
-                self.send_response(404)
-                self.end_headers()
-                return
-            ext = os.path.splitext(path)[1].lower()
-            mime = AURORA_MIME.get(ext, "application/octet-stream")
-            try:
-                with open(path, "rb") as fh:
-                    data = fh.read()
-            except OSError:
-                self.send_response(500)
-                self.end_headers()
-                return
-            self.send_response(200)
-            self.send_header("Content-Type", mime)
-            self.send_header("Content-Length", str(len(data)))
-            # During development force-fresh; in prod we'd cache by mtime.
-            self.send_header("Cache-Control", "no-cache")
-            self.end_headers()
-            self.wfile.write(data)
+        if self._try_serve_aurora(True):
             return
 
         if parsed.path == "/__player_check":
