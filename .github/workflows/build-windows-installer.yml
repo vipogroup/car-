@@ -1,4 +1,5 @@
-# Builds CarPlayerAurora-Setup.exe with Inno Setup. Upload artifact; on tag car-installer-* also creates a GitHub Release.
+# Builds CarPlayerAurora-Setup.exe with Inno Setup. Upload artifact + GitHub Release so
+# https://github.com/OWNER/REPO/releases/latest/download/CarPlayerAurora-Setup.exe works.
 name: Build Windows installer
 
 on:
@@ -32,7 +33,7 @@ jobs:
           name: CarPlayerAurora-Setup
           path: installer/Output/CarPlayerAurora-Setup.exe
 
-      - name: Create GitHub Release (tag only)
+      - name: Create GitHub Release (tag push)
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         env:
@@ -42,3 +43,16 @@ jobs:
           gh release create $tag "installer/Output/CarPlayerAurora-Setup.exe" `
             --title $tag `
             --notes "Windows installer for Car Player / Aurora. Requires Python 3.10+ on PATH. Installs to %LOCALAPPDATA%\\CarPlayer-Aurora and starts the local server at the end."
+
+      # Manual runs previously only uploaded an artifact — no Release → 404 on /releases/latest/download/...
+      - name: Publish GitHub Release (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "car-installer-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+          gh release create $tag "installer/Output/CarPlayerAurora-Setup.exe" `
+            --title "CarPlayer Aurora · Windows installer" `
+            --notes "Built from Actions (workflow_dispatch). Requires Python 3.10+ on PATH. Installs to %LOCALAPPDATA%\\CarPlayer-Aurora and starts the local server at the end." `
+            --latest
