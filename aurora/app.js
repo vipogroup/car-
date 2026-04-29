@@ -10,6 +10,8 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 const APP = window.__AURORA__ || { playlist: [], lanUrl: '', build: '', version: '' };
+const INSTALL_DISMISSED_KEY = 'aurora.installPromptDismissed';
+let deferredInstallPrompt = null;
 
 // ============================================================
 // State
@@ -1062,6 +1064,92 @@ function exitDrive() {
 function openModal(id) { $('#' + id).classList.add('is-open'); }
 function closeModal(id) { $('#' + id).classList.remove('is-open'); }
 
+function isMobileClient() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+}
+
+function isStandaloneInstalled() {
+  try {
+    return (
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      window.navigator.standalone === true
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isNewUserSession() {
+  try {
+    return (
+      !localStorage.getItem(KEYS.library) &&
+      !localStorage.getItem(KEYS.favorites) &&
+      !localStorage.getItem(KEYS.playlists)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function setInstallPromptText() {
+  const host = $('#installPromptText');
+  if (!host) return;
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  if (deferredInstallPrompt) {
+    host.innerHTML = '<p>אפשר להתקין עכשיו בלחיצה אחת.</p>';
+    return;
+  }
+  if (isIOS) {
+    host.innerHTML = '<p>ב־iPhone: לחצי על <strong>שיתוף</strong> ואז <strong>הוסף למסך הבית</strong>.</p>';
+    return;
+  }
+  host.innerHTML = '<p>ב־Android: פתחי תפריט דפדפן (⋮) ואז <strong>התקן אפליקציה</strong> / <strong>Add to Home screen</strong>.</p>';
+}
+
+function maybeShowInstallModal() {
+  if (!isMobileClient() || isStandaloneInstalled()) return;
+  if (!isNewUserSession()) return;
+  if (loadJSON(INSTALL_DISMISSED_KEY, false)) return;
+  setInstallPromptText();
+  openModal('installModal');
+}
+
+async function promptInstallNow() {
+  if (!deferredInstallPrompt) {
+    toast('אפשר להתקין דרך תפריט הדפדפן: "התקן אפליקציה"', 'error');
+    return;
+  }
+  try {
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    if (choice && choice.outcome === 'accepted') {
+      saveJSON(INSTALL_DISMISSED_KEY, true);
+      closeModal('installModal');
+      toast('האפליקציה מותקנת בהצלחה', 'success');
+    }
+  } catch (_) {
+    toast('לא הצלחתי לפתוח חלון התקנה', 'error');
+  } finally {
+    deferredInstallPrompt = null;
+    setInstallPromptText();
+  }
+}
+
+function setupInstallPrompt() {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    setInstallPromptText();
+    setTimeout(maybeShowInstallModal, 300);
+  });
+  window.addEventListener('appinstalled', () => {
+    saveJSON(INSTALL_DISMISSED_KEY, true);
+    closeModal('installModal');
+  });
+  setTimeout(maybeShowInstallModal, 1200);
+}
+
 function openPlayer() { state.playerOpen = true; $('.ar-app').classList.add('is-player-open'); }
 function closePlayer() { state.playerOpen = false; $('.ar-app').classList.remove('is-player-open'); }
 function openQueue() {
@@ -1202,6 +1290,11 @@ function bindEvents() {
         case 'close-eq': closeModal('eqModal'); return;
         case 'qr-mobile': openQR(); return;
         case 'close-qr': closeModal('qrModal'); return;
+        case 'install-app-now': promptInstallNow(); return;
+        case 'close-install-app':
+          saveJSON(INSTALL_DISMISSED_KEY, true);
+          closeModal('installModal');
+          return;
         case 'open-public-link': openModal('publicLinkModal'); return;
         case 'close-public-link': closeModal('publicLinkModal'); return;
         case 'open-tailscale': openModal('tsModal'); return;
@@ -1271,7 +1364,7 @@ function bindEvents() {
     // Click outside palette closes it
     if (state.paletteOpen && !e.target.closest('.ar-palette-card')) closePalette();
     // Click outside modals closes them
-    ['eqModal', 'qrModal', 'tsModal', 'publicLinkModal'].forEach((id) => {
+    ['eqModal', 'qrModal', 'installModal', 'tsModal', 'publicLinkModal'].forEach((id) => {
       const m = $('#' + id);
       if (m.classList.contains('is-open') && e.target === m) m.classList.remove('is-open');
     });
@@ -1289,7 +1382,7 @@ function bindEvents() {
       else if (state.driveMode) exitDrive();
       else if (state.playerOpen) closePlayer();
       else if (state.queueOpen) closeQueue();
-      else ['eqModal', 'qrModal', 'tsModal', 'publicLinkModal'].forEach((id) => closeModal(id));
+      else ['eqModal', 'qrModal', 'installModal', 'tsModal', 'publicLinkModal'].forEach((id) => closeModal(id));
       return;
     }
     if (state.paletteOpen) {
@@ -1386,6 +1479,7 @@ function init() {
   bindEvents();
   bindSearchView();
   buildEqUI();
+  setupInstallPrompt();
 
   audio.volume = state.volume;
 

@@ -403,6 +403,26 @@
     </div>
   </div>
 
+  <!-- Install app modal -->
+  <div class="ar-modal" id="installModal" aria-hidden="true">
+    <div class="ar-modal-card">
+      <header class="ar-modal-head">
+        <h3>התקנת האפליקציה למובייל</h3>
+        <button class="ar-iconbtn-mini" data-action="close-install-app" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="ar-ts-body">
+        <p>מומלץ להתקין למסך הבית כדי לפתוח מהר כמו אפליקציה, עם חוויה מלאה במסך מלא.</p>
+        <div id="installPromptText">
+          <p>אפשר להתקין עכשיו בלחיצה אחת.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="ar-btn ar-btn-primary" data-action="install-app-now">התקן עכשיו</button>
+          <button class="ar-btn" data-action="close-install-app">לא עכשיו</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- קישור ציבורי HTTPS (Cloudflare Quick Tunnel) -->
   <div class="ar-modal" id="publicLinkModal" aria-hidden="true">
     <div class="ar-modal-card">
