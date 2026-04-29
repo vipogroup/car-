@@ -8,6 +8,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# PS 7+: pip/python לפעמים כותבים אזהרות ל-stderr — בלי זה הסקריפט נעצר ב-NativeCommandError למרות שהפקודה הצליחה
+if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
+  $PSNativeCommandUseErrorActionPreference = $false
+}
 $RepoZipUrl = 'https://github.com/vipogroup/car-player-aurora/archive/refs/heads/main.zip'
 
 if (-not $InstallPath) {
@@ -25,11 +29,11 @@ function Invoke-PipRequirements {
   Push-Location $Root
   try {
     if (Get-Command python -ErrorAction SilentlyContinue) {
-      & python -m pip install --upgrade pip 2>$null
+      & python -m pip install --upgrade pip --disable-pip-version-check 2>&1 | Out-Null
       & python -m pip install -r requirements.txt
     }
     else {
-      & py -3 -m pip install --upgrade pip 2>$null
+      & py -3 -m pip install --upgrade pip --disable-pip-version-check 2>&1 | Out-Null
       & py -3 -m pip install -r requirements.txt
     }
   }
