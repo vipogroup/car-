@@ -62,6 +62,9 @@
       <button class="ar-iconbtn ar-iconbtn-ghost" data-action="drive-mode" aria-label="מצב רכב" title="מצב רכב">
         <svg class="ic"><use href="#i-car"/></svg>
       </button>
+      <button class="ar-iconbtn ar-iconbtn-ghost" data-action="open-lan-info" aria-label="מובייל באותה רשת" title="מובייל באותה רשת Wi-Fi">
+        <svg class="ic"><use href="#i-wifi"/></svg>
+      </button>
       <button class="ar-iconbtn ar-iconbtn-ghost" data-action="qr-mobile" aria-label="QR למובייל" title="QR למובייל">
         <svg class="ic"><use href="#i-qr"/></svg>
       </button>
@@ -76,6 +79,8 @@
       </button>
     </div>
   </header>
+
+  <div class="ar-env-bar" id="envBar" role="status" aria-live="polite"></div>
 
   <aside class="ar-sidenav" id="sidenav" aria-label="ניווט ראשי">
     <nav class="ar-nav">
@@ -104,24 +109,9 @@
         </div>
         <div class="ar-hero-quick" id="heroQuick"></div>
       </div>
-
-      <!-- טלפון באותה רשת Wi‑Fi בלבד (מחשב + מובייל על אותה רשת) -->
-      <div class="ar-lan-panel" id="lanWifiPanel" aria-labelledby="lanWifiTitle">
-        <div class="ar-lan-panel-main">
-          <div class="ar-lan-panel-text">
-            <div class="ar-lan-panel-eyebrow" id="lanWifiTitle">מובייל · אותה רשת Wi‑Fi</div>
-            <p class="ar-lan-panel-desc" id="lanWifiDesc">
-              הטלפון והמחשב חייבים להיות על <strong>אותה רשת אלחוטית</strong> (בית / נקודה חמה מהמחשב). לא יעבוד מסלולר בלבד כשהמחשב בבית והטלפון בנסיעה ללא VPN או מנהרה.
-            </p>
-          </div>
-          <div class="ar-lan-panel-actions">
-            <button type="button" class="ar-btn ar-btn-primary" data-action="qr-mobile">סריקת QR</button>
-            <button type="button" class="ar-btn" data-action="copy-lan-home">העתק כתובת</button>
-            <button type="button" class="ar-btn" data-action="open-public-link">קישור HTTPS כמו אתר</button>
-          </div>
-        </div>
-        <div class="ar-lan-panel-url" id="lanWifiUrlDisplay" dir="ltr" translate="no">—</div>
-        <p class="ar-lan-panel-hint" id="lanWifiHint"></p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 18px">
+        <button class="ar-btn ar-btn-primary" data-action="open-local-setup"><svg class="ic"><use href="#i-download"/></svg>התקנה למחשב חדש</button>
+        <button class="ar-btn" data-action="open-lan-info"><svg class="ic"><use href="#i-wifi"/></svg>חיבור מובייל באותה רשת</button>
       </div>
 
       <section class="ar-section">
@@ -398,6 +388,58 @@
           <div>סרקי את הקוד מהטלפון (אותה Wi‑Fi)</div>
           <div class="ar-qr-url" id="qrUrl">—</div>
           <button class="ar-btn ar-btn-primary" data-action="copy-lan">העתק כתובת</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Same Wi-Fi info modal -->
+  <div class="ar-modal" id="lanInfoModal" aria-hidden="true">
+    <div class="ar-modal-card">
+      <header class="ar-modal-head">
+        <h3>מובייל · אותה רשת Wi‑Fi</h3>
+        <button class="ar-iconbtn-mini" data-action="close-lan-info" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="ar-ts-body">
+        <p>
+          הטלפון והמחשב חייבים להיות על <strong>אותה רשת אלחוטית</strong> (בית / נקודה חמה מהמחשב).
+          לא יעבוד מסלולר בלבד כשהמחשב בבית והטלפון בנסיעה ללא VPN או מנהרה.
+        </p>
+        <div class="ar-qr-url" id="lanInfoUrlDisplay" dir="ltr" translate="no">—</div>
+        <p id="lanInfoHint" style="font-size:0.9rem;color:var(--text-3);margin-top:10px"></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button type="button" class="ar-btn ar-btn-primary" data-action="qr-mobile">סריקת QR</button>
+          <button type="button" class="ar-btn" data-action="copy-lan-home">העתק כתובת</button>
+          <button type="button" class="ar-btn" data-action="open-public-link">קישור HTTPS כמו אתר</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Local setup modal -->
+  <div class="ar-modal" id="localSetupModal" aria-hidden="true">
+    <div class="ar-modal-card">
+      <header class="ar-modal-head">
+        <h3>התקנה למשתמש חדש · מחשב + מובייל</h3>
+        <button class="ar-iconbtn-mini" data-action="close-local-setup" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="ar-ts-body">
+        <p>מטרה: להפעיל את המערכת מהמחשב ולפתוח אותה מהמובייל באותה רשת Wi-Fi.</p>
+        <ol>
+          <li>במחשב התקיני Python (אם חסר):
+            <br/><code dir="ltr">winget install Python.Python.3.13</code>
+          </li>
+          <li>הורידי את קוד המערכת:
+            <br/><a href="https://github.com/vipogroup/car-/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download ZIP</a>
+          </li>
+          <li>חלצי את הקבצים, פתחי טרמינל בתיקייה והריצי:
+            <br/><code dir="ltr">python -m http.server 5600 --bind 0.0.0.0</code>
+          </li>
+          <li>במובייל (אותה רשת): פתחי <code dir="ltr">http://&lt;IP-של-המחשב&gt;:5600/aurora/index.html</code></li>
+        </ol>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button type="button" class="ar-btn ar-btn-primary" data-action="copy-run-command">העתק פקודת הרצה</button>
+          <button type="button" class="ar-btn" data-action="open-lan-info">פתח מדריך חיבור מובייל</button>
         </div>
       </div>
     </div>

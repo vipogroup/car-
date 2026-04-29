@@ -2346,3 +2346,51 @@ html[dir="rtl"] .ar-queue {
   .ar-recents-row { grid-auto-columns: 180px; }
   .ar-recents-row .ar-recent-art { aspect-ratio: 1; }
 }
+
+/* ============================================================
+   Environment / run mode bar (Phase 0–1)
+   ============================================================ */
+.ar-env-bar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 16px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--text-2, #b8c4d4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ar-env-bar-msg {
+  flex: 1 1 220px;
+  line-height: 1.45;
+}
+.ar-env-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.ar-env-chip {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ar-env-chip.is-active {
+  border-color: rgba(94, 223, 255, 0.55);
+  background: rgba(94, 223, 255, 0.12);
+  color: #dff8ff;
+}
+.ar-offline-section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-2, #b8c4d4);
+  margin: 16px 0 8px;
+  padding-inline-start: 4px;
+}

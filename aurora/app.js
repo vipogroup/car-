@@ -5,12 +5,19 @@
 import { buildIconSprite, icon } from './icons.js';
 import { extractPalette, applyTheme } from './color.js';
 import { Visualizer } from './visualizer.js';
+import {
+  deviceOfflinePut,
+  deviceOfflineList,
+  deviceOfflineDelete,
+  deviceOfflineBlobUrl,
+} from './device-offline.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 const APP = window.__AURORA__ || { playlist: [], lanUrl: '', build: '', version: '' };
 const INSTALL_DISMISSED_KEY = 'aurora.installPromptDismissed';
+const KEYS_RUN_MODE = 'aurora.runMode';
 let deferredInstallPrompt = null;
 
 // ============================================================
@@ -35,7 +42,12 @@ const state = {
   recents: loadJSON(KEYS.recents, []),
   playlists: loadJSON(KEYS.playlists, []),
   offline: [],
+  deviceOffline: [],
   searchResults: [],
+
+  env: { hasBackend: false, checked: false },
+  runMode: loadJSON(KEYS_RUN_MODE, 'auto'),
+  effectiveRunMode: 'server',
 
   currentTrack: null,
   currentSource: 'library',
@@ -125,6 +137,62 @@ function persist() {
   saveJSON(KEYS.quality, state.quality);
   saveJSON(KEYS.volume, state.volume);
   saveJSON(KEYS.eq, state.eq);
+}
+
+// ============================================================
+// Environment & run mode (Phase 0–1)
+// ============================================================
+function isLikelyStaticHost() {
+  const h = (window.location.hostname || '').toLowerCase();
+  return h.endsWith('github.io') || h === 'pages.github.io';
+}
+
+async function probeEnvironment() {
+  try {
+    const r = await fetch('/api/offline_list', { method: 'GET', cache: 'no-store' });
+    state.env.hasBackend = r.ok;
+  } catch {
+    state.env.hasBackend = false;
+  }
+  state.env.checked = true;
+}
+
+function getEffectiveRunMode() {
+  const m = state.runMode || 'auto';
+  if (m === 'device') return 'device';
+  if (m === 'server') return state.env.hasBackend ? 'server' : 'device';
+  return state.env.hasBackend ? 'server' : 'device';
+}
+
+function applyEnvironmentUI() {
+  const bar = $('#envBar');
+  if (!bar) return;
+  const eff = getEffectiveRunMode();
+  state.effectiveRunMode = eff;
+  const rm = state.runMode || 'auto';
+  const pages = isLikelyStaticHost();
+  let msg = '';
+  if (!state.env.hasBackend) {
+    msg = pages
+      ? 'מצב אתר (GitHub Pages): אין שרת מקומי — חיפוש וניגון מלא דורשים הפעלה במחשב הבית. ניתן לנגן רק שירים שמורים <strong>במכשיר</strong>.'
+      : 'אין חיבור לשרת המלא. ודאי שהשרת רץ, או בחרי ״רק במכשיר״ לניגון מהזיכרון המקומי.';
+  } else {
+    msg = 'מחוברת לשרת המקומי: חיפוש, ניגון והורדה פעילים. אפשר להעתיק שירים גם ל״במכשיר״ לנסיעה בלי המחשב.';
+  }
+  msg += ` <span dir="rtl">פועל כעת: <strong>${eff === 'server' ? 'מול שרת הבית' : 'רק במכשיר'}</strong></span>`;
+  bar.innerHTML = `
+    <div class="ar-env-bar-msg">${msg}</div>
+    <div class="ar-env-bar-actions">
+      <button type="button" class="ar-env-chip ${rm === 'auto' ? 'is-active' : ''}" data-action="set-run-mode" data-mode="auto">אוטומטי</button>
+      <button type="button" class="ar-env-chip ${rm === 'server' ? 'is-active' : ''}" data-action="set-run-mode" data-mode="server">מחובר לבית</button>
+      <button type="button" class="ar-env-chip ${rm === 'device' ? 'is-active' : ''}" data-action="set-run-mode" data-mode="device">רק במכשיר</button>
+      ${state.env.hasBackend ? '<button type="button" class="ar-btn ar-btn-primary" data-action="sync-server-to-device" style="padding:6px 12px;font-size:0.78rem">סנכרן מהשרת למכשיר</button>' : ''}
+    </div>
+  `;
+  const statusEl = $('#serverStatus');
+  if (statusEl) {
+    statusEl.textContent = state.env.hasBackend ? 'שרת מקומי זמין' : 'ללא שרת מלא';
+  }
 }
 
 // ============================================================
@@ -289,6 +357,85 @@ async function apiOfflineDelete(videoId) {
   return r.ok;
 }
 
+/** מעתיק קובץ אודיו מהשרת (offline_stream) ל-IndexedDB במכשיר */
+async function copyTrackToDevice(track) {
+  const vid = track?.videoId || extractVideoId(track?.url || '');
+  if (!vid || !state.env.hasBackend) return;
+  const data = await apiOfflineStream(vid);
+  const streamUrl = data.stream_url || '';
+  if (!streamUrl) throw new Error('אין סטרים להורדה');
+  const fr = await fetch(streamUrl, { mode: 'cors', cache: 'no-store' });
+  if (!fr.ok) throw new Error('הורדה נכשלה');
+  const blob = await fr.blob();
+  await deviceOfflinePut({
+    videoId: vid,
+    title: track.name || data.title || 'שיר',
+    blob,
+    mime: blob.type,
+  });
+}
+
+async function saveTrackOffline(track) {
+  if (!track) {
+    toast('אין שיר לשמירה', 'error');
+    return;
+  }
+  if (!state.env.hasBackend) {
+    toast('שמירה דרך השרת דורשת שרת מקומי פעיל', 'error');
+    return;
+  }
+  const urlTrack = track.url || (track.videoId ? `https://www.youtube.com/watch?v=${track.videoId}` : '');
+  if (!urlTrack) {
+    toast('לשיר אין מזהה — לא ניתן לשמור', 'error');
+    return;
+  }
+  const t = { ...track, url: track.url || urlTrack };
+  toast('שומר אצל השרת ובמכשיר…');
+  await apiOfflineSave(t, state.quality);
+  try {
+    await copyTrackToDevice(t);
+    toast('נשמר אצל השרת ובמכשיר', 'success');
+  } catch (e) {
+    toast(`נשמר בשרת; העתקה למכשיר נכשלה: ${e.message}`, 'error');
+  }
+  void refreshOffline();
+}
+
+async function syncServerOfflineToDevice() {
+  if (!state.env.hasBackend) {
+    toast('אין שרת זמין', 'error');
+    return;
+  }
+  let list = [];
+  try {
+    list = await apiOfflineList();
+  } catch {
+    list = [];
+  }
+  if (!list.length) {
+    toast('אין שירים אצל השרת לסנכרון', 'error');
+    return;
+  }
+  let ok = 0;
+  let fail = 0;
+  for (const row of list) {
+    const vid = row.video_id;
+    if (!vid) continue;
+    try {
+      await copyTrackToDevice({
+        videoId: vid,
+        name: row.title || 'שיר',
+        url: `https://www.youtube.com/watch?v=${vid}`,
+      });
+      ok += 1;
+    } catch {
+      fail += 1;
+    }
+  }
+  toast(`סנכרון למכשיר: ${ok} הצליחו, ${fail} נכשלו`, ok ? 'success' : 'error');
+  void refreshOffline();
+}
+
 // ============================================================
 // Routing / views
 // ============================================================
@@ -300,7 +447,6 @@ function setView(view) {
   if (view === 'favorites') renderFavorites();
   if (view === 'playlists') renderAllPlaylists();
   if (view === 'offline') refreshOffline();
-  if (view === 'home') renderLanWifiPanel();
   document.body.classList.remove('is-nav-open');
   state.navOpen = false;
   $('.ar-app').classList.remove('is-nav-open');
@@ -359,7 +505,6 @@ function renderHome() {
   }
 
   renderPlaylistsGrid($('#playlistsGrid'));
-  renderLanWifiPanel();
 }
 
 function greetByTime() {
@@ -446,28 +591,60 @@ function renderTrackList(host, items, source) {
 
 async function refreshOffline() {
   try {
-    state.offline = await apiOfflineList();
-  } catch { state.offline = []; }
-  $('#bentoOfflineCount').textContent = `${state.offline.length} שירים`;
-  const host = $('#offlineList');
-  if (!state.offline.length) {
-    host.innerHTML = `<div style="color:var(--text-3);padding:18px">אין שירים שמורים אופליין. שמרי שיר מהנגן.</div>`;
-    return;
+    state.offline = state.env.hasBackend ? await apiOfflineList() : [];
+  } catch {
+    state.offline = [];
   }
-  host.innerHTML = state.offline.map((t, i) => `
+  try {
+    state.deviceOffline = await deviceOfflineList();
+  } catch {
+    state.deviceOffline = [];
+  }
+  const total = state.offline.length + state.deviceOffline.length;
+  $('#bentoOfflineCount').textContent = `${total} שירים`;
+  const host = $('#offlineList');
+  const serverRows = state.offline.map((t, i) => `
     <div class="ar-track-row" data-offline-id="${t.video_id}">
       <div class="ar-track-num"><span>${i + 1}</span></div>
       <div class="ar-track-num-play">${icon('play')}</div>
       <img class="ar-track-art" src="https://i.ytimg.com/vi/${t.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.visibility='hidden'"/>
       <div class="ar-track-info">
         <div class="ar-track-title">${escapeHtml(t.title || 'Track')}</div>
-        <div class="ar-track-sub">שמור במחשב · ${t.file || ''}</div>
+        <div class="ar-track-sub">אצל השרת · ${escapeHtml(t.file || '')}</div>
       </div>
       <div class="ar-track-actions">
-        <button class="ar-iconbtn-mini" data-action="delete-offline" data-vid="${t.video_id}" aria-label="מחק">${icon('trash')}</button>
+        <button class="ar-iconbtn-mini" data-action="copy-one-to-device" data-vid="${t.video_id}" title="העתק למכשיר" aria-label="העתק למכשיר">${icon('download')}</button>
+        <button class="ar-iconbtn-mini" data-action="delete-offline" data-vid="${t.video_id}" aria-label="מחק מהשרת">${icon('trash')}</button>
       </div>
     </div>
   `).join('');
+  const devStart = state.offline.length;
+  const deviceRows = state.deviceOffline.map((t, i) => `
+    <div class="ar-track-row" data-device-offline="${t.videoId}">
+      <div class="ar-track-num"><span>${devStart + i + 1}</span></div>
+      <div class="ar-track-num-play">${icon('play')}</div>
+      <img class="ar-track-art" src="https://i.ytimg.com/vi/${t.videoId}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.visibility='hidden'"/>
+      <div class="ar-track-info">
+        <div class="ar-track-title">${escapeHtml(t.title || 'Track')}</div>
+        <div class="ar-track-sub">במכשיר · זמין בלי שרת</div>
+      </div>
+      <div class="ar-track-actions">
+        <button class="ar-iconbtn-mini" data-action="delete-device-offline" data-vid="${t.videoId}" aria-label="מחק מהמכשיר">${icon('trash')}</button>
+      </div>
+    </div>
+  `).join('');
+  if (!total) {
+    host.innerHTML = `<div style="color:var(--text-3);padding:18px">אין שירים אופליין. כשהשרת פעיל — שמרי שיר מהנגן, או סנכרני מהשרת למטה.</div>`;
+    return;
+  }
+  let html = '';
+  if (state.offline.length) {
+    html += `<div class="ar-offline-section-title">אצל השרת (${state.offline.length})</div>${serverRows}`;
+  }
+  if (state.deviceOffline.length) {
+    html += `<div class="ar-offline-section-title">במכשיר (${state.deviceOffline.length})</div>${deviceRows}`;
+  }
+  host.innerHTML = html;
 }
 
 // ============================================================
@@ -487,6 +664,13 @@ function bindSearchView() {
     searchAbort = new AbortController();
     if (!q || q.length < 2) {
       meta.textContent = 'התחילי להקליד כדי לחפש';
+      host.innerHTML = '';
+      return;
+    }
+    if (getEffectiveRunMode() === 'device' || !state.env.hasBackend) {
+      meta.textContent = !state.env.hasBackend
+        ? 'חיפוש YouTube דורש שרת מקומי פעיל.'
+        : 'במצב ״רק במכשיר״ אין חיפוש חיצוני.';
       host.innerHTML = '';
       return;
     }
@@ -524,7 +708,13 @@ function bindSearchView() {
 // ============================================================
 async function playTrack(track, opts = {}) {
   if (!track) return;
-  if (!track.offline && !track.url) {
+  if (getEffectiveRunMode() === 'device') {
+    if (!track.offlineDevice) {
+      toast('מצב ״רק במכשיר״: בחרי שיר מהרשימה ״במכשיר״ למטה', 'error');
+      return;
+    }
+  }
+  if (!track.offline && !track.offlineDevice && !track.url) {
     toast('לשיר אין קישור — לא ניתן לנגן', 'error');
     return;
   }
@@ -535,7 +725,13 @@ async function playTrack(track, opts = {}) {
 
   let streamUrl = '';
   try {
-    if (track.offline) {
+    if (track.offlineDevice) {
+      const got = await deviceOfflineBlobUrl(track.videoId);
+      if (!got?.url) {
+        throw new Error('הקובץ לא נמצא במכשיר');
+      }
+      streamUrl = got.url;
+    } else if (track.offline) {
       const data = await apiOfflineStream(track.videoId);
       streamUrl = data.stream_url || '';
     } else {
@@ -853,6 +1049,7 @@ function refreshPalette(query) {
 let paletteSearchAbort;
 async function backgroundPaletteSearch(q) {
   try {
+    if (getEffectiveRunMode() === 'device' || !state.env.hasBackend) return;
     if (paletteSearchAbort) paletteSearchAbort.abort();
     paletteSearchAbort = new AbortController();
     const r = await apiSearch(q);
@@ -1012,19 +1209,19 @@ function sameWifiShareUrl() {
   return '';
 }
 
-function renderLanWifiPanel() {
-  const urlEl = $('#lanWifiUrlDisplay');
-  const hintEl = $('#lanWifiHint');
+function renderLanInfoModal() {
+  const urlEl = $('#lanInfoUrlDisplay');
+  const hintEl = $('#lanInfoHint');
   if (!urlEl || !hintEl) return;
   const u = sameWifiShareUrl();
   if (u) {
     urlEl.textContent = u;
     hintEl.textContent =
-      'פתחי את הכתובת בדפדפן הטלפון (Chrome או Edge). אם הדף לא נטען — הריצי פעם אחת כמנהל את add-firewall-unblocked.ps1 (אישור פורט 5600 בחומת האש של Windows).';
+      'פתחי את הכתובת בדפדפן הטלפון (Chrome או Edge).';
   } else {
     urlEl.textContent = '—';
     hintEl.innerHTML =
-      'השרת לא דיווח כתובת LAN. הריצי <strong>start-server-lan.bat</strong> (אזינה על כל הממשקים). בטלפון הזיני את כתובת ה־IP של המחשב ברשת (למשל 192.168.x.x) ולא 127.0.0.1.';
+      'לא זוהתה כתובת LAN זמינה. ודאי שהטלפון והמחשב על אותה רשת ונסי לפתוח את הקישור מהדפדפן במחשב.';
   }
 }
 
@@ -1150,6 +1347,13 @@ function setupInstallPrompt() {
   setTimeout(maybeShowInstallModal, 1200);
 }
 
+function copyRunCommand() {
+  const cmd = 'python -m http.server 5600 --bind 0.0.0.0';
+  navigator.clipboard?.writeText(cmd)
+    .then(() => toast('פקודת הרצה הועתקה', 'success'))
+    .catch(() => toast('העתקה נכשלה', 'error'));
+}
+
 function openPlayer() { state.playerOpen = true; $('.ar-app').classList.add('is-player-open'); }
 function closePlayer() { state.playerOpen = false; $('.ar-app').classList.remove('is-player-open'); }
 function openQueue() {
@@ -1199,11 +1403,8 @@ function toggleQuality() {
 
 async function saveCurrentOffline() {
   if (!state.currentTrack) { toast('אין שיר מתנגן', 'error'); return; }
-  toast('שומר אופליין… זה יכול לקחת רגע');
   try {
-    await apiOfflineSave(state.currentTrack, state.quality);
-    toast('נשמר אופליין', 'success');
-    refreshOffline();
+    await saveTrackOffline(state.currentTrack);
   } catch (e) {
     toast(`שגיאה: ${e.message}`, 'error');
   }
@@ -1251,6 +1452,23 @@ function bindEvents() {
     if (action === 'remove-from-library' && inlineId) { removeFromLibrary(inlineId); return; }
     if (action === 'add-to-playlist-id' && inlineId) { addToPlaylist(inlineId); return; }
     if (action === 'save-offline-id' && inlineId) { saveOfflineById(inlineId); return; }
+    if (action === 'delete-device-offline' && inlineVid) {
+      void deleteDeviceOffline(inlineVid);
+      return;
+    }
+    if (action === 'copy-one-to-device' && inlineVid) {
+      const ent = state.offline.find((t) => t.video_id === inlineVid);
+      const tr = {
+        videoId: inlineVid,
+        name: ent?.title || 'שיר',
+        url: `https://www.youtube.com/watch?v=${inlineVid}`,
+      };
+      toast('מעתיק למכשיר…');
+      void copyTrackToDevice(tr)
+        .then(() => { toast('הועתק למכשיר', 'success'); return refreshOffline(); })
+        .catch((err) => toast(String(err?.message || err), 'error'));
+      return;
+    }
     if (action === 'delete-offline' && inlineVid) { deleteOffline(inlineVid); return; }
 
     if (eqToggle) {
@@ -1290,6 +1508,31 @@ function bindEvents() {
         case 'close-eq': closeModal('eqModal'); return;
         case 'qr-mobile': openQR(); return;
         case 'close-qr': closeModal('qrModal'); return;
+        case 'open-lan-info':
+          renderLanInfoModal();
+          openModal('lanInfoModal');
+          return;
+        case 'close-lan-info': closeModal('lanInfoModal'); return;
+        case 'open-local-setup': openModal('localSetupModal'); return;
+        case 'close-local-setup': closeModal('localSetupModal'); return;
+        case 'copy-run-command': copyRunCommand(); return;
+        case 'set-run-mode': {
+          const btn = e.target.closest('[data-action="set-run-mode"]');
+          const mode = btn?.dataset.mode;
+          if (!mode || !['auto', 'server', 'device'].includes(mode)) return;
+          state.runMode = mode;
+          saveJSON(KEYS_RUN_MODE, mode);
+          if (mode === 'server' && !state.env.hasBackend) {
+            toast('אין שרת זמין כרגע — עברי ל״אוטומטי״ או ודאי שהשרת רץ', 'error');
+            state.runMode = 'auto';
+            saveJSON(KEYS_RUN_MODE, 'auto');
+          }
+          applyEnvironmentUI();
+          return;
+        }
+        case 'sync-server-to-device':
+          void syncServerOfflineToDevice();
+          return;
         case 'install-app-now': promptInstallNow(); return;
         case 'close-install-app':
           saveJSON(INSTALL_DISMISSED_KEY, true);
@@ -1345,6 +1588,12 @@ function bindEvents() {
     }
     if (filter) { state.libraryFilter = filter; renderLibrary(); return; }
     if (playlistId) { openPlaylistDetail(playlistId); return; }
+    const devOffEl = e.target.closest('[data-device-offline]');
+    if (devOffEl && !e.target.closest('[data-action]')) {
+      const dvid = devOffEl.getAttribute('data-device-offline');
+      if (dvid) void playDeviceOffline(dvid);
+      return;
+    }
     if (offlineId) { playOfflineById(offlineId); return; }
     if (searchId) { playSearchResult(searchId); return; }
     if (playId) {
@@ -1364,7 +1613,7 @@ function bindEvents() {
     // Click outside palette closes it
     if (state.paletteOpen && !e.target.closest('.ar-palette-card')) closePalette();
     // Click outside modals closes them
-    ['eqModal', 'qrModal', 'installModal', 'tsModal', 'publicLinkModal'].forEach((id) => {
+    ['eqModal', 'qrModal', 'lanInfoModal', 'localSetupModal', 'installModal', 'tsModal', 'publicLinkModal'].forEach((id) => {
       const m = $('#' + id);
       if (m.classList.contains('is-open') && e.target === m) m.classList.remove('is-open');
     });
@@ -1382,7 +1631,7 @@ function bindEvents() {
       else if (state.driveMode) exitDrive();
       else if (state.playerOpen) closePlayer();
       else if (state.queueOpen) closeQueue();
-      else ['eqModal', 'qrModal', 'installModal', 'tsModal', 'publicLinkModal'].forEach((id) => closeModal(id));
+      else ['eqModal', 'qrModal', 'lanInfoModal', 'localSetupModal', 'installModal', 'tsModal', 'publicLinkModal'].forEach((id) => closeModal(id));
       return;
     }
     if (state.paletteOpen) {
@@ -1424,16 +1673,44 @@ function removeFromLibrary(id) {
 
 function saveOfflineById(id) {
   const t = state.library.find(x => x.id === id);
-  if (t) { state.currentTrack = t; saveCurrentOffline(); }
+  if (t) void saveTrackOffline(t);
 }
 
 async function deleteOffline(vid) {
   if (!confirm('למחוק מהספרייה האופליין?')) return;
   await apiOfflineDelete(vid);
-  refreshOffline();
+  void refreshOffline();
+}
+
+async function deleteDeviceOffline(vid) {
+  if (!confirm('למחוק מהמכשיר?')) return;
+  try {
+    await deviceOfflineDelete(vid);
+    toast('נמחק מהמכשיר', 'success');
+    await refreshOffline();
+  } catch (err) {
+    toast(String(err?.message || err), 'error');
+  }
+}
+
+async function playDeviceOffline(videoId) {
+  const row = state.deviceOffline.find((x) => x.videoId === videoId);
+  const track = {
+    id: `dev_${videoId}`,
+    name: row?.title || 'שיר',
+    url: '',
+    videoId,
+    uploader: 'במכשיר',
+    offlineDevice: true,
+  };
+  await playTrack(track);
 }
 
 async function playOfflineById(vid) {
+  if (getEffectiveRunMode() === 'device') {
+    toast('במצב ״רק במכשיר״ — נגני רק מהרשימה ״במכשיר״', 'error');
+    return;
+  }
   const ent = state.offline.find(t => t.video_id === vid);
   if (!ent) return;
   const track = { id: 'off_' + vid, name: ent.title, url: '', videoId: vid, uploader: 'אופליין', offline: true };
@@ -1441,6 +1718,10 @@ async function playOfflineById(vid) {
 }
 
 function playSearchResult(id) {
+  if (getEffectiveRunMode() === 'device' || !state.env.hasBackend) {
+    toast('חיפוש וניגון מהרשת דורשים שרת או יציאה ממצב ״רק במכשיר״', 'error');
+    return;
+  }
   const r = state.searchResults.find(x => x.id === id);
   if (!r) return;
   const tr = { id: makeId(`https://www.youtube.com/watch?v=${id}`), name: r.title, url: `https://www.youtube.com/watch?v=${id}`, videoId: id, uploader: r.uploader };
@@ -1470,9 +1751,12 @@ function deletePlaylist(plId) {
 // ============================================================
 // Bootstrap
 // ============================================================
-function init() {
+async function init() {
   buildIconSprite();
   extractPalette('').then((p) => applyTheme(p, { instant: true })).catch(() => {});
+
+  await probeEnvironment();
+  applyEnvironmentUI();
 
   bindAudio();
   bindSeek();
@@ -1491,9 +1775,8 @@ function init() {
   const lanIp = (APP.lanUrl || '').match(/\/\/([\d.]+)/);
   if (lanIp) $('#tsExample').textContent = `http://<Tailscale-IP>:${(APP.lanUrl || '').split(':').pop().replace('/', '') || '5600'}`;
 
-  // First render
+  await refreshOffline();
   renderHome();
-  refreshOffline();
   setView('home');
 
   const vf = $('#volumeFill');
@@ -1519,7 +1802,7 @@ function init() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => { void init(); });
 } else {
-  init();
+  void init();
 }
