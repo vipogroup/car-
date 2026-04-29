@@ -20,7 +20,10 @@ const INSTALL_DISMISSED_KEY = 'aurora.installPromptDismissed';
 const BUNDLE_FP_KEY = 'aurora.uiBundleFingerprint';
 const LAST_APPLIED_BUNDLE_AT_KEY = 'aurora.lastBundleAppliedAt';
 const KEYS_RUN_MODE = 'aurora.runMode';
-/** Same URL as כפתור ההורדה ב־localSetupModal — GitHub Releases latest asset */
+/** GitHub API: latest release assets (public repo). Private repo → 404 without token — ניפול ל-PowerShell. */
+const GH_AURORA_RELEASES_API_LATEST =
+  'https://api.github.com/repos/vipogroup/car-player-aurora/releases/latest';
+/** ישירות ל-GitHub (כשיש Release + קובץ) */
 const WINDOWS_INSTALLER_DOWNLOAD_URL =
   'https://github.com/vipogroup/car-player-aurora/releases/latest/download/CarPlayerAurora-Setup.exe';
 let deferredInstallPrompt = null;
@@ -1587,20 +1590,57 @@ function copyRunCommand() {
     .catch(() => toast('העתקה נכשלה', 'error'));
 }
 
-/** Starts .exe download in the same user gesture (Chrome allows; fallback: tab with file). */
-function triggerWindowsInstallerDownload() {
+/** מחזיר true אם נמצא נכס וניסינו להתחיל הורדה (URL אמיתי מה-API). */
+async function tryDownloadInstallerExeFromRelease() {
   try {
+    const r = await fetch(GH_AURORA_RELEASES_API_LATEST, {
+      headers: { Accept: 'application/vnd.github+json' },
+      cache: 'no-store',
+    });
+    if (!r.ok) return false;
+    const data = await r.json();
+    const asset = (data.assets || []).find((a) => a.name === 'CarPlayerAurora-Setup.exe');
+    const url = asset?.browser_download_url;
+    if (!url || typeof url !== 'string') return false;
     const a = document.createElement('a');
-    a.href = WINDOWS_INSTALLER_DOWNLOAD_URL;
+    a.href = url;
     a.download = 'CarPlayerAurora-Setup.exe';
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
-    a.referrerPolicy = 'no-referrer-when-downgrade';
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { try { a.remove(); } catch (_) { /* ignore */ } }, 500);
-  } catch (_) {
-    toast('לא הצלחתי להתחיל הורדה — לחצי ״הורד״ בתוך החלון', 'error');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** חלון התקנה + העתקת פקודת PowerShell + הורדת exe רק אם קיים ב-Release (לא 404 בטאב). */
+async function flowNewComputerSetup() {
+  openModal('localSetupModal');
+  const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm '${AUTO_INSTALL_SCRIPT_RAW}' | iex"`;
+  let copied = false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(cmd);
+      copied = true;
+    }
+  } catch {
+    copied = false;
+  }
+  const exeOk = await tryDownloadInstallerExeFromRelease();
+  if (exeOk) {
+    toast(
+      copied
+        ? 'הורדת המתקין החלה. פקודת PowerShell גם הועתקה (גיבוי אם ההורדה נחסמה).'
+        : 'הורדת המתקין החלה.',
+      'success',
+    );
+  } else if (copied) {
+    toast('אין עדיין קובץ מתקין ב-GitHub — פקודת התקנה הועתקה. פתחי PowerShell → הדביקי → Enter (Python קודם).', 'success');
+  } else {
+    toast('העתקי ידנית למטה: ״העתק פקודת התקנה אוטומטית״ — אין עדיין מתקין exe ב-Release.', 'error');
   }
 }
 
@@ -1764,8 +1804,7 @@ function bindEvents() {
           return;
         case 'close-lan-info': closeModal('lanInfoModal'); return;
         case 'open-local-setup':
-          openModal('localSetupModal');
-          triggerWindowsInstallerDownload();
+          void flowNewComputerSetup();
           return;
         case 'close-local-setup': closeModal('localSetupModal'); return;
         case 'copy-auto-install': copyAutoInstallCommand(); return;
